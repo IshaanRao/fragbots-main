@@ -16,4 +16,4 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version-file: 'fragbots/go.mod'
-    - run: go version
+    - run: go build
