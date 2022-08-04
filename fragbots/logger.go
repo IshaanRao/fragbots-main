@@ -18,7 +18,6 @@ var colorReset = "\033[0m"
 var colorRed = "\033[31m"
 var colorGreen = "\033[32m"
 
-// var colorYellow = "\033[33m"
 var webhookRegex = regexp.MustCompile("hooks/(.*)/(.*)")
 
 var logWebhook webhook.Client
