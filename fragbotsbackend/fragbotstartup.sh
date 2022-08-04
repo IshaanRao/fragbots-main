@@ -16,4 +16,7 @@ yum update -y
 yum install docker -y
 systemctl enable docker.service
 systemctl start docker.service
-docker rm -f fragbot
+docker stop fragbot
+docker rm fragbot
+docker pull ishaanrao/fragbots:latest
+docker run ishaanrao/fragbots:latest --name fragbot -e ACCESS_TOKEN -e AUTHKEY -e BACKEND_URI -e BOT_ID
