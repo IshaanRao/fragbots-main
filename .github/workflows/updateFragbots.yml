@@ -15,5 +15,5 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions/setup-go@v3
       with:
-        go-version-file: './go.mod'
+        go-version-file: 'fragbots/go.mod'
     - run: go version
