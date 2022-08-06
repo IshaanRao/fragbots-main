@@ -135,6 +135,7 @@ func onDc(reason chat.Message) error {
 		}
 		botLogFatal("Bot was Banned")
 	}
+	commandQueue.Shutdown()
 	_, err := logWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
 		SetEmbeds(discord.NewEmbedBuilder().
 			SetTitle(Client.Client.Name+" Logs").

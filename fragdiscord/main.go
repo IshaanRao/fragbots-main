@@ -11,7 +11,7 @@ import (
 
 var client *discordgo.Session
 var ReqClient = req.C().
-	SetTimeout(60 * time.Second)
+	SetTimeout(120 * time.Second)
 
 func init() {
 
