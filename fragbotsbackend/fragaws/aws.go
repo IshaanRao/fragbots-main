@@ -1,10 +1,16 @@
 package fragaws
 
 import (
+	"bufio"
 	"context"
+	"encoding/base64"
+	"fragbotsbackend/constants"
 	"fragbotsbackend/logging"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"os"
 )
 
 type EC2CreateInstanceAPI interface {
@@ -29,28 +35,54 @@ func init() {
 
 }
 
-/*func MakeFragBotServer() {
+func MakeFragBotServer(botId string) error {
 	templateId := "lt-0b61c41adf6ba92f2"
-	userDataReRun := "Content-Type: multipart/mixed; boundary=\"//\"\nMIME-Version: 1.0\n\n--//\nContent-Type: text/cloud-config; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"cloud-config.txt\"\n\n#cloud-config\ncloud_final_modules:\n- [scripts-user, always]\n\n--//\nContent-Type: text/x-shellscript; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"userdata.txt\"\n\n#!/bin/bash\n"
-	userData := base64.StdEncoding.EncodeToString([]byte(userDataReRun +
-		"cat > test.txt"))
+
+	userData, err := getAwsUserData()
+	if err != nil {
+		logging.LogWarn("Failed to get userdata file error: " + err.Error())
+		return err
+	}
+	userData += "\ndocker run -d --name fragbot -e ACCESS_TOKEN=" + constants.AccessToken + " -e AUTHKEY=" + constants.AuthKey + " -e BACKEND_URI=" + constants.BackendUrl + " -e BOT_ID=" + botId + " ishaanrao/fragbots:latest"
+
+	userDataEncoded := base64.StdEncoding.EncodeToString([]byte(userData))
 	input := &ec2.RunInstancesInput{
 		LaunchTemplate: &types.LaunchTemplateSpecification{
 			LaunchTemplateId: &templateId,
 		},
 		MinCount: aws.Int32(1),
 		MaxCount: aws.Int32(1),
-		UserData: &userData,
+		UserData: &userDataEncoded,
 	}
 
-	result, err := MakeInstance(context.TODO(), client, input)
+	result, err := MakeInstance(context.TODO(), AwsClient, input)
 	if err != nil {
-		fmt.Println("Got an error creating an instance:")
-		fmt.Println(err)
-		return
+		logging.LogWarn("Encountered error creating instance: " + err.Error())
+		return err
 	}
 	logging.Log("Made aws server with id: " + *result.Instances[0].InstanceId)
-}*/
+	return nil
+}
+
+func getAwsUserData() (string, error) {
+	file, err := os.Open("fragbotstartup.sh")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	scanner.Scan()
+	userData := scanner.Text()
+	for scanner.Scan() {
+		userData += "\n" + scanner.Text()
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return userData, nil
+}
 
 func MakeInstance(c context.Context, api EC2CreateInstanceAPI, input *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
 	return api.RunInstances(c, input)

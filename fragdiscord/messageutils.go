@@ -128,12 +128,23 @@ func (messageBuilder *MessageBuilder) sendAsInteractionResponseMessage(client *d
 	}
 }
 
+func (messageBuilder *MessageBuilder) sendAsInteractionResponseEdit(client *discordgo.Session, event *discordgo.InteractionCreate) {
+	_, err := client.InteractionResponseEdit(event.Interaction, &discordgo.WebhookEdit{
+		Content:    &messageBuilder.Message.Content,
+		Components: &messageBuilder.Message.Components,
+		Embeds:     &messageBuilder.Message.Embeds,
+	})
+	if err != nil {
+		LogWarn("Failed to send interactionresponseedit, error: " + err.Error())
+	}
+}
+
 func (messageBuilder *MessageBuilder) sendAsInteractionResponseUpdate(client *discordgo.Session, event *discordgo.InteractionCreate) {
 	err := client.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseUpdateMessage,
 		Data: messageBuilder.Message,
 	})
 	if err != nil {
-		LogWarn("Failed to send interactionresponsemessage, error: " + err.Error())
+		LogWarn("Failed to send interactionresponse, error: " + err.Error())
 	}
 }

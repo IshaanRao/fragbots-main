@@ -26,7 +26,7 @@ var AddBotCommand = &Command{
 			},
 		},
 	},
-	Handler:              run,
+	Handler:              addBotRun,
 	RunAsync:             false,
 	HasComponentHandlers: true,
 	ComponentHandlers: []*ComponentHandler{
@@ -45,7 +45,7 @@ var AddBotCommand = &Command{
 
 var credentialsRegex = regexp.MustCompile("`(.*?)`")
 
-func run(client *discordgo.Session, event *discordgo.InteractionCreate) {
+func addBotRun(client *discordgo.Session, event *discordgo.InteractionCreate) {
 	username := event.ApplicationCommandData().Options[0].StringValue()
 	password := event.ApplicationCommandData().Options[1].StringValue()
 	NewMessageBuilder().

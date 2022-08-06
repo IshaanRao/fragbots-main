@@ -12,10 +12,12 @@ import (
 var Port int
 
 var AccessToken string
+var AuthKey string
 
 var MongoURL string
 
 var AccountsURL string
+var BackendUrl string
 
 var ReqClient = req.C().
 	SetTimeout(20 * time.Second)
@@ -47,11 +49,12 @@ func init() {
 	}
 
 	AccessToken = getEnv("ACCESS_TOKEN")
+	AuthKey = getEnv("AUTHKEY")
 
 	MongoURL = getEnv("MONGODB_URI")
 
 	AccountsURL = getEnv("ACCOUNTS_URI")
-
+	BackendUrl = getEnv("BACKEND_URI")
 	ExclusiveLogWebhook = getEnv("EXCHOOK")
 	ExclusiveConsoleWebhook = getEnv("EXCCONSOLEHOOK")
 

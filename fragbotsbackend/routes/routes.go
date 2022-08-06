@@ -15,6 +15,8 @@ func InitRoutes() {
 	botInfo.GET("/:botid", getBotData)
 	botInfo.POST("/addbot", postAddCredentials)
 	botInfo.POST("/removebot", postRemoveCredentials)
+	botInfo.POST("/createbot/:botid", createBotStage1)
+	botInfo.POST("/createbot2", createBotStage2)
 }
 
 func auth() gin.HandlerFunc {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fragbotsbackend/constants"
 	"fragbotsbackend/database"
+	"fragbotsbackend/fragaws"
 	"fragbotsbackend/logging"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -46,10 +47,19 @@ type RemoveBotRequest struct {
 	BotId string `json:"botId"`
 }
 
+type MsAuthData struct {
+	Channel chan *MSauth
+	BotData *BotInfo
+}
+
 type AccountDocument struct {
 	Username string `json:"username" bson:"username"`
 	Password string `json:"password" bson:"password"`
 	UsedOn   string `json:"usedOn" bson:"usedOn"`
+}
+
+type CreateBotRequest struct {
+	UserCode string `json:"userCode"`
 }
 
 type Bot string
@@ -60,6 +70,9 @@ const (
 	Whitelisted     = "WHITELISTED"
 	Verified        = "VERIFIED"
 )
+
+var authChannels = make(map[string]MsAuthData)
+var fragbotInfo = make(map[string]*BotInfo)
 
 func getVerifiedOneBotInfo() *BotInfo {
 	return &BotInfo{
@@ -152,13 +165,15 @@ func getBotInfo(botId string) (*BotInfo, error) {
 func createBotStage1(c *gin.Context) {
 	id := c.Param("botid")
 	if id == "" {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Missing BotID"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Missing BotID"})
 		return
 	}
 	logging.Debug("Creating fragbot with id: " + id)
 	botInfo, err := getBotInfo(id)
 	if err != nil {
+		logging.LogWarn(err.Error())
 		if err.Error() == "no account" {
+			logging.LogWarn("Gave no account response to bot")
 			c.IndentedJSON(http.StatusServiceUnavailable, gin.H{"error": "no accounts"})
 			return
 		}
@@ -166,18 +181,69 @@ func createBotStage1(c *gin.Context) {
 		return
 	}
 	if botInfo.AccInfo == nil {
-		c.IndentedJSON(http.StatusPartialContent, gin.H{"botInfo": botInfo})
+		msAuthData, authChannel, err := AuthMSdevice()
+		if err != nil {
+			logging.LogWarn(err.Error())
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+			return
+		}
+		authChannels[msAuthData.UserCode] = MsAuthData{
+			Channel: authChannel,
+			BotData: botInfo,
+		}
+		msAuthData.Email = botInfo.AccDocument.Username
+		msAuthData.Password = botInfo.AccDocument.Password
+		c.IndentedJSON(http.StatusPartialContent, gin.H{"msAuthInfo": msAuthData})
 		return
 	}
-	setupBot(botInfo)
+	err = setupBot(botInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while starting server"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
 }
 
 func createBotStage2(c *gin.Context) {
+	body := CreateBotRequest{}
+	err := c.Bind(&body)
+	if err != nil {
+		logging.LogWarn(err.Error())
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	}
+	msData, ok := authChannels[body.UserCode]
+	if !ok {
+		logging.LogWarn("Invalid User Code")
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid User Code"})
+	}
+	authData := <-msData.Channel
+	if authData == nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while checking data"})
+	}
+	credentials, err := GetMCcredentials(*authData)
+	if err != nil {
+		return
+	}
+	delete(authChannels, body.UserCode)
+	botInfo := *msData.BotData
+	botInfo.AccInfo = credentials
+	err = setupBot(&botInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while starting server"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
 
 }
 
-func setupBot(botInfo *BotInfo) {
+func setupBot(botInfo *BotInfo) error {
+	err := fragaws.MakeFragBotServer(botInfo.BotId)
+	if err != nil {
+		return err
 
+	}
+	fragbotInfo[botInfo.BotId] = botInfo
+	return nil
 }
 
 func getBotData(c *gin.Context) {
@@ -186,19 +252,9 @@ func getBotData(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Missing BotID"})
 		return
 	}
-	botInfo, err := getBotInfo(id)
+	botInfo, ok := fragbotInfo[id]
 
-	if err != nil {
-		if err.Error() == "no account" {
-			c.IndentedJSON(http.StatusServiceUnavailable, gin.H{"Error": "No accounts left"})
-			return
-		}
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"Error": "Failed to change database"})
-		logging.LogWarn(err.Error())
-		return
-	}
-
-	if botInfo == nil {
+	if !ok {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid BotID"})
 		return
 	}
