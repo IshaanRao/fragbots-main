@@ -83,8 +83,8 @@ func (client *McClient) joinHypixel() error {
 			botLogFatal("Bot was Banned")
 			return err
 		} else {
-			botLog("DISCONNECTED")
-			_ = client.joinHypixel()
+			botLog("Kicked from hypixel while joining err: " + err.Error())
+			return err
 		}
 	}
 

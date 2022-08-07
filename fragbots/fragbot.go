@@ -53,7 +53,7 @@ func startFragBot() {
 
 	err := Client.startClient()
 	if err != nil {
-		println(err.Error())
+		botLog(err.Error())
 		return
 	}
 
@@ -70,7 +70,7 @@ func startFragBot() {
 				println("Disconnect: ", err.Error())
 				return
 			} else {
-				botLog("Unexpected Error: " + err.Error())
+				botLog("PacketHandlerError Error: " + err.Error())
 				return
 			}
 		} else {
@@ -135,8 +135,12 @@ func onDc(reason chat.Message) error {
 		}
 		botLogFatal("Bot was Banned")
 	}
+	err := Client.Client.Close()
+	if err != nil {
+		botLog("Failed to close client")
+	}
 	commandQueue.Shutdown()
-	_, err := logWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
+	_, err = logWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
 		SetEmbeds(discord.NewEmbedBuilder().
 			SetTitle(Client.Client.Name+" Logs").
 			SetDescription("FragBot was kicked from Hypixel! Reconnecting...").

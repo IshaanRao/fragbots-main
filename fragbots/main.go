@@ -44,7 +44,7 @@ func main() {
 		Client = McClient{}
 		startFragBot()
 		botLog("Restarting fragbot")
-		time.Sleep(5 * time.Second)
+		time.Sleep(15 * time.Second)
 	}
 }
 
