@@ -61,7 +61,7 @@ func startFragBot() {
 
 	for {
 		if err = Client.Client.HandleGame(); err == nil {
-			panic("Unexpected error has occurred!!")
+			botLog("Unexpected error has occurred!!")
 			return
 		}
 
@@ -217,17 +217,19 @@ func onParty(ign string) {
 
 func queueCommand(ign string) error {
 	err := commandQueue.QueueTask(func(ctx context.Context) error {
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 		err := Client.chat("/party accept " + ign)
 		if err != nil {
 			queueLen--
 			botLog("Error occurred while accepting party invite from: " + ign)
+			botLog("Error: " + err.Error())
 			return nil
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
 		err = Client.chat("/party leave")
 		if err != nil {
-			botLog("Error occurred while accepting leaving party of: " + ign)
+			botLog("Error occurred while leaving party of: " + ign)
+			botLog("Error: " + err.Error())
 		}
 		queueLen--
 		return nil

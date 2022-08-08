@@ -38,9 +38,11 @@ type AccountDataResponse struct {
 	} `json:"profile"`
 }
 
-type CredentialsRequest struct {
-	Username string `json:"username" form:"username"`
-	Password string `json:"password" form:"password"`
+type PostBotRequest struct {
+	Stage    int    `json:"stage" form:"stage"`
+	Username string `json:"username,omitempty" form:"username"`
+	Password string `json:"password,omitempty" form:"password"`
+	UserCode string `json:"userCode,omitempty"`
 }
 
 type RemoveBotRequest struct {
@@ -279,8 +281,8 @@ func postRemoveCredentials(c *gin.Context) {
 
 }
 
-func postAddCredentials(c *gin.Context) {
-	var credentials CredentialsRequest
+func PostBot(c *gin.Context) {
+	var credentials PostBotRequest
 	err := c.Bind(&credentials)
 	if err != nil || (credentials.Password == "" || credentials.Username == "") {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})

@@ -13,7 +13,7 @@ func InitRoutes() {
 	botInfo := Router.Group("/botinfo")
 	botInfo.Use(auth())
 	botInfo.GET("/:botid", getBotData)
-	botInfo.POST("/addbot", postAddCredentials)
+	botInfo.POST("/bots", PostBot)
 	botInfo.POST("/removebot", postRemoveCredentials)
 	botInfo.POST("/createbot/:botid", createBotStage1)
 	botInfo.POST("/createbot2", createBotStage2)
