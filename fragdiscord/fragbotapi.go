@@ -1,13 +1,13 @@
 package main
 
-import (
-	"errors"
-)
-
 type CreateBotResponse struct {
-	Err        string        `json:"error"`
 	MsAuthInfo *AuthUserData `json:"msAuthInfo,omitempty"`
 }
+
+type ErrorResponse struct {
+	Err string `json:"error,omitempty"`
+}
+
 type AuthUserData struct {
 	UserCode        string `json:"userCode"`
 	VerificationUrl string `json:"VerificationUrl"`
@@ -15,20 +15,25 @@ type AuthUserData struct {
 	Password        string `json:"password"`
 }
 
-type CreateBotRequest struct {
-	UserCode string `json:"userCode"`
+type PostBotRequest struct {
+	Stage    int    `json:"stage" form:"stage"`
+	Email    string `json:"email,omitempty" form:"email"`
+	Password string `json:"password,omitempty" form:"password"`
+	UserCode string `json:"userCode,omitempty" form:"userCode"`
 }
 
-func CreateBot2(userCode string) error {
-	resp, err := ReqClient.R().
+func CreateBot2(botId string, request PostBotRequest) *ErrorResponse {
+	errRes := ErrorResponse{}
+	_, err := ReqClient.R().
 		SetHeader("access-token", AccessToken).
-		SetBodyJsonMarshal(CreateBotRequest{userCode}).
-		Post(BackendUrl + "/botinfo/createbot2")
+		SetBodyJsonMarshal(request).
+		SetError(errRes).
+		Post(BackendUrl + "/bots/" + botId)
 	if err != nil {
-		return err
+		return &ErrorResponse{"Request timed out!"}
 	}
-	if resp.StatusCode != 200 {
-		return errors.New("something went wrong")
+	if errRes.Err != "" {
+		return &errRes
 	}
 	return nil
 }
@@ -47,15 +52,20 @@ func addBot(username string, password string) bool {
 	return true
 }
 
-func CreateBot(id string) *CreateBotResponse {
+func CreateBot(botId string, request PostBotRequest) (*CreateBotResponse, *ErrorResponse) {
 	result := CreateBotResponse{}
+	errRes := ErrorResponse{}
 	_, err := ReqClient.R().
 		SetHeader("access-token", AccessToken).
+		SetBodyJsonMarshal(request).
 		SetResult(&result).
-		SetError(&result).
-		Post(BackendUrl + "/botinfo/createbot/" + id)
+		SetError(&errRes).
+		Post(BackendUrl + "/bots/" + botId)
 	if err != nil {
-		return nil
+		return nil, &ErrorResponse{"Backend Offline"}
 	}
-	return &result
+	if errRes.Err != "" {
+		return nil, &errRes
+	}
+	return &result, nil
 }

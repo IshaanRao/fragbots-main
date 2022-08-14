@@ -10,25 +10,37 @@ import (
 )
 
 type FragBotData struct {
-	BotId   string `json:"botId"`
 	BotInfo struct {
 		BotId       string `json:"botId"`
 		BotType     Bot    `json:"botType"`
-		AccountInfo *struct {
+		AccountInfo struct {
 			Uuid        string `json:"uuid"`
 			Username    string `json:"username"`
+			Email       string `json:"email"`
+			Password    string `json:"password"`
 			AccessToken string `json:"accessToken"`
-		} `json:"accountInfo,omitempty"`
-		AccountDocument *struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-			UsedOn   string `json:"usedOn"`
-		} `json:"accountDocument,omitempty"`
+		} `json:"accountInfo"`
 		DiscordInfo struct {
 			LogWebhook     string `json:"logWebhook"`
 			ConsoleWebhook string `json:"consoleWebhook"`
 		} `json:"discordInfo"`
 	} `json:"botInfo"`
+}
+
+type HypixelStatusResponse struct {
+	Success bool   `json:"success"`
+	Uuid    string `json:"uuid"`
+	Session struct {
+		Online   bool   `json:"online"`
+		GameType string `json:"gameType"`
+		Mode     string `json:"mode"`
+		Map      string `json:"map"`
+	} `json:"session"`
+}
+
+type HypixelStatusError struct {
+	Success bool   `json:"success"`
+	Cause   string `json:"cause"`
 }
 
 type MojangResponse struct {
@@ -100,9 +112,26 @@ func getFragBotsUser(username string) (*FragBotsUser, error) {
 func deleteBot() error {
 	_, err := ReqClient.R().
 		SetHeader("access-token", AccessToken).
-		SetBodyJsonString("{\"botId\":\"" + FragData.BotId + "\"}").
+		SetBodyJsonString("{\"botId\":\"" + FragData.BotInfo.BotId + "\"}").
 		Post(BackendUrl + "/botinfo/removebot")
 	return err
+}
+func isOnline(uuid string) (bool, error) {
+	dataResp := HypixelStatusResponse{}
+	errResp := HypixelStatusError{}
+	_, err := ReqClient.R().
+		SetHeader("ApiKey", HypixelApiKey).
+		SetResult(dataResp).
+		SetError(errResp).
+		Post("https://api.hypixel.net/status" + uuid)
+
+	if err != nil {
+		return false, err
+	}
+	if !dataResp.Success {
+		return false, errors.New(errResp.Cause)
+	}
+	return dataResp.Session.Online, nil
 }
 
 func addUse(uuid string) error {

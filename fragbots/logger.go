@@ -31,7 +31,7 @@ var intialized = false
 // botLog logs data to the discord console and console logs
 func botLog(msg string) {
 	var prefix string
-	if Client.Data == nil {
+	if Client == nil || Client.Data == nil {
 		prefix = "[NotLoggedIn]"
 	} else {
 		prefix = "[" + Client.Data.Username + "]"
@@ -43,7 +43,7 @@ func botLog(msg string) {
 
 func botLogFatal(msg string) {
 	var prefix string
-	if Client.Data == nil {
+	if Client == nil || Client.Data == nil {
 		prefix = "[NotLoggedIn]"
 	} else {
 		prefix = "[" + Client.Data.Username + "-Fatal]"
@@ -83,7 +83,7 @@ func DumpCache() {
 	consoleCache = nil
 	_, err := consoleWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
 		SetEmbeds(discord.NewEmbedBuilder().
-			SetTitle(FragData.BotId+" Logs").
+			SetTitle(FragData.BotInfo.BotId+" Logs").
 			SetDescription(dump).
 			SetColor(DefaultEmbedColor).
 			SetTimestamp(time.Now()).

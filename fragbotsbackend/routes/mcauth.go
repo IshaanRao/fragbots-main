@@ -10,14 +10,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
 // MSauth holds Microsoft auth credentials
 type MSauth struct {
-	AccessToken  string
-	ExpiresAfter int64
-	RefreshToken string
+	AccessToken  string `json:"accessToken" bson:"accessToken"`
+	ExpiresAfter int64  `json:"expiresAfter" bson:"expiresAfter"`
+	RefreshToken string `json:"refreshToken" bson:"refreshToken"`
 }
 
 type AuthUserData struct {
@@ -29,6 +30,50 @@ type AuthUserData struct {
 
 // AzureClientIDEnvVar Used to lookup Azure client id via os.Getenv if cid is not passed
 const AzureClientIDEnvVar = "AzureClientID"
+
+// CheckRefreshMS Checks MSauth for expired token and refreshes if needed
+func CheckRefreshMS(auth *MSauth) error {
+	cid := "88650e7e-efee-4857-b9a9-cf580a00ef43"
+
+	if auth.ExpiresAfter <= time.Now().Unix() {
+		if cid == "" {
+			cid = os.Getenv(AzureClientIDEnvVar)
+		}
+		MSdata := url.Values{
+			"client_id": {cid},
+			// "client_secret": {os.Getenv("AzureSecret")},
+			"refresh_token": {auth.RefreshToken},
+			"grant_type":    {"refresh_token"},
+			"redirect_uri":  {"https://login.microsoftonline.com/common/oauth2/nativeclient"},
+		}
+		MSresp, err := http.PostForm("https://login.live.com/oauth20_token.srf", MSdata)
+		if err != nil {
+			return err
+		}
+		var MSres map[string]interface{}
+		json.NewDecoder(MSresp.Body).Decode(&MSres)
+		MSresp.Body.Close()
+		if MSresp.StatusCode != 200 {
+			return fmt.Errorf("MS refresh attempt answered not HTTP200! Instead got %s and following json: %#v", MSresp.Status, MSres)
+		}
+		MSaccessToken, ok := MSres["access_token"].(string)
+		if !ok {
+			return errors.New("Access_token not found in response")
+		}
+		auth.AccessToken = MSaccessToken
+		MSrefreshToken, ok := MSres["refresh_token"].(string)
+		if !ok {
+			return errors.New("Refresh_token not found in response")
+		}
+		auth.RefreshToken = MSrefreshToken
+		MSexpireSeconds, ok := MSres["expires_in"].(float64)
+		if !ok {
+			return errors.New("Expires_in not found in response")
+		}
+		auth.ExpiresAfter = time.Now().Unix() + int64(MSexpireSeconds)
+	}
+	return nil
+}
 
 // AuthMSdevice Attempts to authorize user via device flow. Will block thread until gets error, timeout or actual authorization
 func AuthMSdevice() (*AuthUserData, chan *MSauth, error) {
@@ -364,5 +409,6 @@ func GetMCcredentials(MSa MSauth) (*AccountInfo, error) {
 		return nil, err
 	}
 	auth.AccessToken = MCa.Token
+
 	return auth, nil
 }

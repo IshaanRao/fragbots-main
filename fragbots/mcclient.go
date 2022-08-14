@@ -17,6 +17,7 @@ type McClient struct {
 	Data     *UserData
 	Client   *bot.Client
 	Player   *basic.Player
+	ShutDown bool
 }
 
 // UserData holds necessary data to log on to hypixel

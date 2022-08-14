@@ -35,7 +35,6 @@ func registerCommand(command *Command) {
 }
 
 func registerCommands() {
-	registerCommand(AddBotCommand)
 	registerCommand(CreateBotCommand)
 	Debug("Registered all commands successfully!")
 }

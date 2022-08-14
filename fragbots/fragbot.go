@@ -60,6 +60,12 @@ func startFragBot() {
 	basic.EventsListener{ChatMsg: onChat, Disconnect: onDc, GameStart: onStart}.Attach(Client.Client)
 
 	for {
+
+		if Client.ShutDown {
+			botLog("Shutdown client goroutine")
+			return
+		}
+
 		if err = Client.Client.HandleGame(); err == nil {
 			botLog("Unexpected error has occurred!!")
 			return

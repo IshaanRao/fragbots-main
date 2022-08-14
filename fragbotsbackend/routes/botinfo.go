@@ -11,12 +11,13 @@ import (
 	"net/http"
 )
 
+// Bot Info Types
+
 type BotInfo struct {
-	BotId       string           `json:"botId"`
-	BotType     Bot              `json:"botType"`
-	AccInfo     *AccountInfo     `json:"accountInfo,omitempty"`
-	AccDocument *AccountDocument `json:"accountDocument,omitempty"`
-	DiscInfo    *DiscordInfo     `json:"discordInfo"`
+	BotId    string       `json:"botId" bson:"botId"`
+	BotType  Bot          `json:"botType" bson:"botType"`
+	AccInfo  *AccountInfo `json:"accountInfo,omitempty" bson:"accInfo"`
+	DiscInfo *DiscordInfo `json:"discordInfo" bson:"discInfo"`
 }
 
 type DiscordInfo struct {
@@ -25,10 +26,32 @@ type DiscordInfo struct {
 }
 
 type AccountInfo struct {
-	UUID        string `json:"uuid"`
-	Username    string `json:"username"`
-	AccessToken string `json:"accessToken"`
+	UUID        string `json:"uuid" bson:"uuid"`
+	Username    string `json:"username" bson:"username"`
+	Email       string `json:"email" bson:"email"`
+	Password    string `json:"password" bson:"password"`
+	AccessToken string `json:"accessToken" bson:"accessToken"`
+	AuthData    MSauth `json:"msAuth" bson:"authData"`
 }
+
+// Requests
+
+type PostBotRequest struct {
+	Stage    int    `json:"stage" form:"stage"`
+	Email    string `json:"email,omitempty" form:"email"`
+	Password string `json:"password,omitempty" form:"password"`
+	UserCode string `json:"userCode,omitempty" form:"userCode"`
+}
+
+type RemoveBotRequest struct {
+	BotId string `json:"botId"`
+}
+
+type CreateBotRequest struct {
+	UserCode string `json:"userCode"`
+}
+
+// Response Types
 
 type AccountDataResponse struct {
 	Token   string `json:"token"`
@@ -38,30 +61,11 @@ type AccountDataResponse struct {
 	} `json:"profile"`
 }
 
-type PostBotRequest struct {
-	Stage    int    `json:"stage" form:"stage"`
-	Username string `json:"username,omitempty" form:"username"`
-	Password string `json:"password,omitempty" form:"password"`
-	UserCode string `json:"userCode,omitempty"`
-}
+// Misc Types
 
-type RemoveBotRequest struct {
-	BotId string `json:"botId"`
-}
-
-type MsAuthData struct {
+type MsAuthChannelData struct {
 	Channel chan *MSauth
 	BotData *BotInfo
-}
-
-type AccountDocument struct {
-	Username string `json:"username" bson:"username"`
-	Password string `json:"password" bson:"password"`
-	UsedOn   string `json:"usedOn" bson:"usedOn"`
-}
-
-type CreateBotRequest struct {
-	UserCode string `json:"userCode"`
 }
 
 type Bot string
@@ -73,8 +77,7 @@ const (
 	Verified        = "VERIFIED"
 )
 
-var authChannels = make(map[string]MsAuthData)
-var fragbotInfo = make(map[string]*BotInfo)
+var authChannels = make(map[string]MsAuthChannelData)
 
 func getVerifiedOneBotInfo() *BotInfo {
 	return &BotInfo{
@@ -84,6 +87,7 @@ func getVerifiedOneBotInfo() *BotInfo {
 			LogWebhook:     constants.VerifiedOneLogWebhook,
 			ConsoleWebhook: constants.VerifiedOneConsoleWebhook,
 		},
+		AccInfo: &AccountInfo{},
 	}
 }
 
@@ -95,6 +99,7 @@ func getVerifiedTwoBotInfo() *BotInfo {
 			LogWebhook:     constants.VerifiedTwoLogWebhook,
 			ConsoleWebhook: constants.VerifiedTwoConsoleWebhook,
 		},
+		AccInfo: &AccountInfo{},
 	}
 }
 
@@ -106,6 +111,7 @@ func getWhitelistedBotInfo() *BotInfo {
 			LogWebhook:     constants.WhitelistedLogWebhook,
 			ConsoleWebhook: constants.WhitelistedConsoleWebhook,
 		},
+		AccInfo: &AccountInfo{},
 	}
 }
 
@@ -117,6 +123,7 @@ func getActiveBotInfo() *BotInfo {
 			LogWebhook:     constants.ActiveLogWebhook,
 			ConsoleWebhook: constants.ActiveConsoleWebhook,
 		},
+		AccInfo: &AccountInfo{},
 	}
 }
 
@@ -128,6 +135,7 @@ func getExclusiveBotInfo() *BotInfo {
 			LogWebhook:     constants.ExclusiveLogWebhook,
 			ConsoleWebhook: constants.ExclusiveConsoleWebhook,
 		},
+		AccInfo: &AccountInfo{},
 	}
 }
 
@@ -146,106 +154,9 @@ func getBotInfo(botId string) (*BotInfo, error) {
 		botInfo = getVerifiedTwoBotInfo()
 	}
 	if botInfo == nil {
-		return nil, nil
+		return nil, errors.New("invalid id")
 	}
-
-	accDoc, accInfo, err := GetAccount(botId)
-	if err != nil {
-		return nil, errors.New("no account")
-	}
-
-	accDoc.UsedOn = botId
-	err = database.UpdateDocument("accounts", bson.D{{"username", accDoc.Username}}, bson.D{{"usedOn", botId}})
-	if err != nil {
-		return nil, err
-	}
-	botInfo.AccDocument = accDoc
-	botInfo.AccInfo = accInfo
 	return botInfo, nil
-}
-
-func createBotStage1(c *gin.Context) {
-	id := c.Param("botid")
-	if id == "" {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Missing BotID"})
-		return
-	}
-	logging.Debug("Creating fragbot with id: " + id)
-	botInfo, err := getBotInfo(id)
-	if err != nil {
-		logging.LogWarn(err.Error())
-		if err.Error() == "no account" {
-			logging.LogWarn("Gave no account response to bot")
-			c.IndentedJSON(http.StatusServiceUnavailable, gin.H{"error": "no accounts"})
-			return
-		}
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
-		return
-	}
-	if botInfo.AccInfo == nil {
-		msAuthData, authChannel, err := AuthMSdevice()
-		if err != nil {
-			logging.LogWarn(err.Error())
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
-			return
-		}
-		authChannels[msAuthData.UserCode] = MsAuthData{
-			Channel: authChannel,
-			BotData: botInfo,
-		}
-		msAuthData.Email = botInfo.AccDocument.Username
-		msAuthData.Password = botInfo.AccDocument.Password
-		c.IndentedJSON(http.StatusPartialContent, gin.H{"msAuthInfo": msAuthData})
-		return
-	}
-	err = setupBot(botInfo)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while starting server"})
-		return
-	}
-	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
-}
-
-func createBotStage2(c *gin.Context) {
-	body := CreateBotRequest{}
-	err := c.Bind(&body)
-	if err != nil {
-		logging.LogWarn(err.Error())
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-	}
-	msData, ok := authChannels[body.UserCode]
-	if !ok {
-		logging.LogWarn("Invalid User Code")
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid User Code"})
-	}
-	authData := <-msData.Channel
-	if authData == nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while checking data"})
-	}
-	credentials, err := GetMCcredentials(*authData)
-	if err != nil {
-		return
-	}
-	delete(authChannels, body.UserCode)
-	botInfo := *msData.BotData
-	botInfo.AccInfo = credentials
-	err = setupBot(&botInfo)
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while starting server"})
-		return
-	}
-	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
-
-}
-
-func setupBot(botInfo *BotInfo) error {
-	err := fragaws.MakeFragBotServer(botInfo.BotId)
-	if err != nil {
-		return err
-
-	}
-	fragbotInfo[botInfo.BotId] = botInfo
-	return nil
 }
 
 func getBotData(c *gin.Context) {
@@ -254,89 +165,140 @@ func getBotData(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Missing BotID"})
 		return
 	}
-	botInfo, ok := fragbotInfo[id]
 
-	if !ok {
+	var botInfo BotInfo
+	err := database.GetDocument("accounts", bson.D{{"botId", id}}, &botInfo)
+	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid BotID"})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{"botId": id, "botInfo": botInfo})
-}
-
-func postRemoveCredentials(c *gin.Context) {
-	var body RemoveBotRequest
-	err := c.Bind(&body)
-	if err != nil || body.BotId == "" {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})
+	var MSa = botInfo.AccInfo.AuthData
+	err = CheckRefreshMS(&MSa)
+	if err != nil {
+		logging.LogWarn("Failed to check refresh token: " + err.Error())
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Failed to check refresh token"})
 		return
 	}
-	logging.Debug("Removing credentials from bot: " + body.BotId)
-	success := database.DeleteDocument("accounts", bson.D{{"usedOn", body.BotId}})
-	if success {
-		c.IndentedJSON(http.StatusOK, gin.H{"Success": "Removed credentials from db"})
+
+	if MSa.AccessToken != botInfo.AccInfo.AuthData.AccessToken {
+		botInfo.AccInfo.AuthData = MSa
+	}
+
+	credentials, err := GetMCcredentials(botInfo.AccInfo.AuthData)
+	if err != nil {
+		logging.LogWarn("Error occurred while getting credentials: " + err.Error())
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while checking data"})
 		return
 	}
-	c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Failed to remove credentials"})
+	botInfo.AccInfo.UUID = credentials.UUID
+	botInfo.AccInfo.Username = credentials.Username
+	botInfo.AccInfo.AccessToken = credentials.AccessToken
+	logging.Log("Successfully refreshed bot data")
 
+	c.IndentedJSON(http.StatusOK, gin.H{"botInfo": botInfo})
 }
 
 func PostBot(c *gin.Context) {
-	var credentials PostBotRequest
-	err := c.Bind(&credentials)
-	if err != nil || (credentials.Password == "" || credentials.Username == "") {
+	botId := c.Param("botid")
+	var request PostBotRequest
+	err := c.Bind(&request)
+
+	if botId == "" || err != nil || request.Stage == 0 {
+		logging.LogWarn("Post bot request failed invalid request body")
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})
 		return
 	}
-	logging.Debug("Received add credentials request username: " + credentials.Username + ", password: " + credentials.Password)
-	if (database.DocumentExists("accounts", bson.D{{"Username", credentials.Username}})) {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Account exists"})
+
+	info, err := getBotInfo(botId)
+	if err != nil {
+		logging.LogWarn("Post bot request failed: " + err.Error())
 		return
 	}
-	_, err = database.InsertDocument("accounts", AccountDocument{
-		Username: credentials.Username,
-		Password: credentials.Password,
-		UsedOn:   "none",
-	})
 
-	if err != nil {
-		logging.LogWarn("Failed to add account credentials, error: " + err.Error())
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"Error:": "Failed to add credentials to database"})
-		return
-	}
-	logging.Debug("Added account credentials to server")
-	c.IndentedJSON(http.StatusOK, gin.H{"Success:": "Added credentials to server"})
-}
-
-func GetAccount(botId string) (*AccountDocument, *AccountInfo, error) {
-	account := AccountDocument{}
-	err := database.GetDocument("accounts", bson.D{
-		{"usedOn", botId},
-	}, &account)
-
-	if err != nil {
-		if err2 := database.GetDocument("accounts", bson.D{{"usedOn", "none"}}, &account); err2 != nil {
-			return nil, nil, err2
+	if request.Stage == 1 {
+		if request.Password == "" || request.Email == "" {
+			logging.LogWarn("Post bot request failed invalid request body (Stage 1)")
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})
+			return
 		}
-	}
 
-	accDataResp := AccountDataResponse{}
-	get, err := constants.ReqClient.R().
-		SetHeader("access-token", constants.AccessToken).
-		SetHeader("username", account.Username).
-		SetHeader("password", account.Password).
-		SetResult(&accDataResp).
-		Get(constants.AccountsURL + "/getaccdata")
-	if err != nil || get.StatusCode != 200 {
+		if (database.DocumentExists("accounts", bson.D{{"botId", botId}})) {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Bot already exists with that id"})
+			return
+		}
+
+		// Device flow with account
+		msAuthData, authChannel, err := AuthMSdevice()
 		if err != nil {
-			logging.LogWarn("Failed to get account data error: " + err.Error())
+			logging.LogWarn(err.Error())
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+			return
 		}
-		return &account, nil, nil
+		info.AccInfo.Email = request.Email
+		info.AccInfo.Password = request.Password
+		authChannels[msAuthData.UserCode] = MsAuthChannelData{
+			Channel: authChannel,
+			BotData: info,
+		}
+		msAuthData.Email = request.Email
+		msAuthData.Password = request.Password
+		c.IndentedJSON(http.StatusOK, gin.H{"msAuthInfo": msAuthData})
+		return
+
+	} else if request.Stage == 2 {
+		if request.UserCode == "" {
+			logging.LogWarn("Post bot request failed invalid request body (Stage 1)")
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})
+			return
+		}
+
+		if (database.DocumentExists("accounts", bson.D{{"botId", botId}})) {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Bot already exists with that id"})
+			return
+		}
+
+		msData, ok := authChannels[request.UserCode]
+		if !ok {
+			logging.LogWarn("Invalid User Code")
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid User Code"})
+		}
+
+		authData := <-msData.Channel
+		if authData == nil {
+			logging.LogWarn("Error occurred while checking data most likely timeout")
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while checking data"})
+		}
+
+		msData.BotData.AccInfo.AuthData = *authData
+
+		credentials, err := GetMCcredentials(*authData)
+		if err != nil {
+			logging.LogWarn("Error occurred while getting credentials: " + err.Error())
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while checking data"})
+			return
+		}
+		delete(authChannels, request.UserCode)
+
+		botInfo := *msData.BotData
+		botInfo.AccInfo.UUID = credentials.UUID
+		botInfo.AccInfo.Username = credentials.Username
+		botInfo.AccInfo.AccessToken = credentials.AccessToken
+		err = fragaws.MakeFragBotServer(botInfo.BotId)
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while starting server"})
+			return
+		}
+
+		_, err = database.InsertDocument("accounts", botInfo)
+
+		if err != nil {
+			logging.LogWarn("Failed to add account credentials, error: " + err.Error())
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error:": "Failed to add credentials to database"})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, gin.H{"success": true})
+
 	}
-	accInfo := AccountInfo{
-		Username:    accDataResp.Profile.Name,
-		UUID:        accDataResp.Profile.Id,
-		AccessToken: accDataResp.Token,
-	}
-	return &account, &accInfo, nil
+
 }
