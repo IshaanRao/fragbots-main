@@ -13,7 +13,7 @@ var Port int
 
 var AccessToken string
 var AuthKey string
-
+var HypixelApiKey string
 var MongoURL string
 
 var AccountsURL string
@@ -57,6 +57,7 @@ func init() {
 	BackendUrl = getEnv("BACKEND_URI")
 	ExclusiveLogWebhook = getEnv("EXCHOOK")
 	ExclusiveConsoleWebhook = getEnv("EXCCONSOLEHOOK")
+	HypixelApiKey = getEnv("HYPIXEL_API_KEY")
 
 	ActiveLogWebhook = getEnv("ACTHOOK")
 	ActiveConsoleWebhook = getEnv("ACTCONSHOOK")

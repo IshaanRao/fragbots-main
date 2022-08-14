@@ -43,7 +43,7 @@ func MakeFragBotServer(botId string) error {
 		logging.LogWarn("Failed to get userdata file error: " + err.Error())
 		return err
 	}
-	userData += "\ndocker run -d --name fragbot -e ACCESS_TOKEN=" + constants.AccessToken + " -e AUTHKEY=" + constants.AuthKey + " -e BACKEND_URI=" + constants.BackendUrl + " -e BOT_ID=" + botId + " ishaanrao/fragbots:latest"
+	userData += "\ndocker run -d --name fragbot -e ACCESS_TOKEN=" + constants.AccessToken + " -e AUTHKEY=" + constants.AuthKey + " -e BACKEND_URI=" + constants.BackendUrl + " -e HYPIXEL_API_KEY=" + constants.HypixelApiKey + " -e BOT_ID=" + botId + " ishaanrao/fragbots:latest"
 
 	userDataEncoded := base64.StdEncoding.EncodeToString([]byte(userData))
 	input := &ec2.RunInstancesInput{
