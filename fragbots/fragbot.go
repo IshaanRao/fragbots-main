@@ -63,24 +63,29 @@ func startFragBot() {
 
 		if Client.ShutDown {
 			botLog("Shutdown client goroutine")
+			stopBot()
 			return
 		}
 
 		if err = Client.Client.HandleGame(); err == nil {
 			botLog("Unexpected error has occurred!!")
+			stopBot()
 			return
 		}
 
 		if err2 := new(bot.PacketHandlerError); errors.As(err, err2) {
 			if err := new(bot.DisconnectErr); errors.As(err2, err) {
 				println("Disconnect: ", err.Error())
+				stopBot()
 				return
 			} else {
 				botLog("PacketHandlerError Error: " + err.Error())
+				stopBot()
 				return
 			}
 		} else {
 			botLog("Unexpected Error: " + err.Error())
+			stopBot()
 			return
 		}
 	}
@@ -97,6 +102,14 @@ func onChat(c chat.Message, _ byte, _ uuid.UUID) error {
 	onParty(partyInviteRegex.FindStringSubmatch(msg)[1])
 
 	return nil
+}
+
+func stopBot() {
+	err := Client.Client.Close()
+	if err != nil {
+		botLog("Failed to close client")
+	}
+	commandQueue.Shutdown()
 }
 
 func onStart() error {
@@ -141,12 +154,8 @@ func onDc(reason chat.Message) error {
 		}
 		botLogFatal("Bot was Banned")
 	}
-	err := Client.Client.Close()
-	if err != nil {
-		botLog("Failed to close client")
-	}
-	commandQueue.Shutdown()
-	_, err = logWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
+	stopBot()
+	_, err := logWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
 		SetEmbeds(discord.NewEmbedBuilder().
 			SetTitle(Client.Client.Name+" Logs").
 			SetDescription("FragBot was kicked from Hypixel! Reconnecting...").

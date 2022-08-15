@@ -5,6 +5,7 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/joho/godotenv"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -33,13 +34,17 @@ func main() {
 
 	go startBot()
 	for {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		if FragData == nil {
 			continue
 		}
 		online, err := isOnline(FragData.BotInfo.AccountInfo.Uuid)
-		if err != nil || online {
+		if err != nil {
 			botLog("Failed to get if bot was online: " + err.Error())
+			continue
+		}
+		botLog("(Routine Bot Check) Bot Online: " + strconv.FormatBool(online))
+		if online {
 			continue
 		}
 		Client.ShutDown = true

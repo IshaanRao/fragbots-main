@@ -120,10 +120,10 @@ func isOnline(uuid string) (bool, error) {
 	dataResp := HypixelStatusResponse{}
 	errResp := HypixelStatusError{}
 	_, err := ReqClient.R().
-		SetHeader("ApiKey", HypixelApiKey).
-		SetResult(dataResp).
-		SetError(errResp).
-		Post("https://api.hypixel.net/status" + uuid)
+		SetHeader("API-Key", HypixelApiKey).
+		SetResult(&dataResp).
+		SetError(&errResp).
+		Get("https://api.hypixel.net/status?uuid=" + uuid)
 
 	if err != nil {
 		return false, err
