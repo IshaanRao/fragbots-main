@@ -49,7 +49,7 @@ func main() {
 		}
 		Client.ShutDown = true
 		FragData = nil
-		startBot()
+		go startBot()
 	}
 
 }
