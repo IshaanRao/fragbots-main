@@ -83,7 +83,7 @@ func DumpCache() {
 	consoleCache = nil
 	_, err := consoleWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
 		SetEmbeds(discord.NewEmbedBuilder().
-			SetTitle(FragData.BotInfo.BotId+" Logs").
+			SetTitle(BotId+" Logs").
 			SetDescription(dump).
 			SetColor(DefaultEmbedColor).
 			SetTimestamp(time.Now()).
