@@ -34,7 +34,7 @@ var sentJoin bool
 
 // startFragBot starts main fragbot program and creates the mc client
 func startFragBot() {
-
+	botLog("Reset variables and created command queue")
 	commandQueue = queue.NewPool(1)
 	sentJoin = false
 	queueLen = 0
@@ -53,12 +53,13 @@ func startFragBot() {
 
 	err := Client.startClient()
 	if err != nil {
+		botLog("error while starting client")
 		botLog(err.Error())
 		return
 	}
-
+	botLog("registered event listeners")
 	basic.EventsListener{ChatMsg: onChat, Disconnect: onDc, GameStart: onStart}.Attach(Client.Client)
-
+	botLog("started main loop")
 	for {
 
 		if Client.ShutDown {
@@ -89,6 +90,7 @@ func startFragBot() {
 			return
 		}
 	}
+	botLog("Fragbot main loop stopped")
 }
 
 // onChat function that gets called when bot recieves a chat message also calls fragbotparty function

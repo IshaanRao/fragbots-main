@@ -49,12 +49,13 @@ func main() {
 		}
 		Client.ShutDown = true
 		FragData = nil
+		botLog("Waiting before starting fragbot")
+		time.Sleep(30 * time.Second)
 		go startBot()
 	}
 
 }
 
-// Returns true if banned
 func startBot() {
 	botLog("Starting fragbots")
 	getFragData(BotId)

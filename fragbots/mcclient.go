@@ -31,14 +31,11 @@ var serverIp = "play.hypixel.net"
 
 // startClient starts the client to log on to hypixel
 func (client *McClient) startClient() error {
-	userData, err := client.getUserData()
-	if err != nil {
-		return err
-	}
+	userData := client.getUserData()
 
 	client.Data = userData
 	client.setupBot()
-	err = client.joinHypixel()
+	err := client.joinHypixel()
 	if err != nil {
 		return err
 
@@ -101,11 +98,11 @@ func (client *McClient) chat(msg string) error {
 }
 
 // getUserData Gets data required for login from microsoft
-func (client *McClient) getUserData() (*UserData, error) {
+func (client *McClient) getUserData() *UserData {
 	data := UserData{
 		Username: FragData.BotInfo.AccountInfo.Username,
 		Uuid:     FragData.BotInfo.AccountInfo.Uuid,
 		Ssid:     FragData.BotInfo.AccountInfo.AccessToken,
 	}
-	return &data, nil
+	return &data
 }
