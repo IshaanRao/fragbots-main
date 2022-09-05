@@ -53,7 +53,7 @@ func startFragBot() {
 		waitTime = verifiedWaitTime
 
 	}
-
+	botLog("Starting client with wait time: " + strconv.FormatInt(int64(waitTime), 10))
 	err := Client.startClient()
 	if err != nil {
 		botLog("error while starting client")
