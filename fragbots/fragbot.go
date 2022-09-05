@@ -22,9 +22,10 @@ var partyInviteRegex = regexp.MustCompile("(\\w*\\b) has invited you to join .* 
 var commandQueue *queue.Queue
 
 // Wait time constants
-var exclusiveWaitTime = 11
-var activeWaitTime = 7
-var whitelistedWaitTime = 6
+var priorityWaitTime = 10
+var exclusiveWaitTime = 10
+var activeWaitTime = 5
+var whitelistedWaitTime = 5
 var verifiedWaitTime = 5
 var waitTime = 0
 
@@ -109,7 +110,7 @@ func onChat(c chat.Message, _ byte, _ uuid.UUID) error {
 func stopBot() {
 	err := Client.Client.Close()
 	if err != nil {
-		botLog("Failed to close client")
+		botLog("Failed to close client error: " + err.Error())
 	}
 	commandQueue.Shutdown()
 }

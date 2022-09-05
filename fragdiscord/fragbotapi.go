@@ -22,12 +22,16 @@ type PostBotRequest struct {
 	UserCode string `json:"userCode,omitempty" form:"userCode"`
 }
 
+type DeleteBotRequest struct {
+	Delete bool `json:"delete" form:"delete"`
+}
+
 func CreateBot2(botId string, request PostBotRequest) *ErrorResponse {
 	errRes := ErrorResponse{}
 	_, err := ReqClient.R().
 		SetHeader("access-token", AccessToken).
 		SetBodyJsonMarshal(request).
-		SetError(errRes).
+		SetError(&errRes).
 		Post(BackendUrl + "/bots/" + botId)
 	if err != nil {
 		return &ErrorResponse{"Request timed out!"}
@@ -36,20 +40,6 @@ func CreateBot2(botId string, request PostBotRequest) *ErrorResponse {
 		return &errRes
 	}
 	return nil
-}
-
-func addBot(username string, password string) bool {
-	post, err := ReqClient.R().
-		SetHeader("access-token", AccessToken).
-		SetBodyJsonString("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}").
-		Post(BackendUrl + "/botinfo/addbot")
-	if err != nil || post.StatusCode != 200 {
-		if err != nil {
-			LogWarn("Failed to add bot: " + err.Error())
-		}
-		return false
-	}
-	return true
 }
 
 func CreateBot(botId string, request PostBotRequest) (*CreateBotResponse, *ErrorResponse) {
@@ -68,4 +58,50 @@ func CreateBot(botId string, request PostBotRequest) (*CreateBotResponse, *Error
 		return nil, &errRes
 	}
 	return &result, nil
+}
+
+func StartBot(botId string) *ErrorResponse {
+	errRes := ErrorResponse{}
+	_, err := ReqClient.R().
+		SetHeader("access-token", AccessToken).
+		SetError(&errRes).
+		Put(BackendUrl + "/bots/" + botId)
+	if err != nil {
+		return &ErrorResponse{"Request timed out!"}
+	}
+	if errRes.Err != "" {
+		return &errRes
+	}
+	return nil
+}
+
+func StopBot(botId string) *ErrorResponse {
+	errRes := ErrorResponse{}
+	_, err := ReqClient.R().
+		SetHeader("access-token", AccessToken).
+		SetError(&errRes).
+		Delete(BackendUrl + "/bots/" + botId)
+	if err != nil {
+		return &ErrorResponse{"Request timed out!"}
+	}
+	if errRes.Err != "" {
+		return &errRes
+	}
+	return nil
+}
+
+func DeleteBot(botId string) *ErrorResponse {
+	errRes := ErrorResponse{}
+	_, err := ReqClient.R().
+		SetHeader("access-token", AccessToken).
+		SetBody(DeleteBotRequest{Delete: true}).
+		SetError(&errRes).
+		Delete(BackendUrl + "/bots/" + botId)
+	if err != nil {
+		return &ErrorResponse{"Request timed out!"}
+	}
+	if errRes.Err != "" {
+		return &errRes
+	}
+	return nil
 }

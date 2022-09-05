@@ -22,6 +22,9 @@ var BackendUrl string
 var ReqClient = req.C().
 	SetTimeout(20 * time.Second)
 
+var PriorityLogWebhook string
+var PriorityConsoleWebhook string
+
 var ExclusiveLogWebhook string
 var ExclusiveConsoleWebhook string
 
@@ -55,9 +58,13 @@ func init() {
 
 	AccountsURL = getEnv("ACCOUNTS_URI")
 	BackendUrl = getEnv("BACKEND_URI")
-	ExclusiveLogWebhook = getEnv("EXCHOOK")
-	ExclusiveConsoleWebhook = getEnv("EXCCONSOLEHOOK")
 	HypixelApiKey = getEnv("HYPIXEL_API_KEY")
+
+	PriorityLogWebhook = getEnv("PRIHOOK")
+	PriorityConsoleWebhook = getEnv("PRICONSHOOK")
+
+	ExclusiveLogWebhook = getEnv("EXCHOOK")
+	ExclusiveConsoleWebhook = getEnv("EXCCONSHOOK")
 
 	ActiveLogWebhook = getEnv("ACTHOOK")
 	ActiveConsoleWebhook = getEnv("ACTCONSHOOK")

@@ -35,15 +35,15 @@ func init() {
 
 }
 
-func MakeFragBotServer(botId string) error {
+func MakeFragBotServer(botId string) (string, error) {
 	templateId := "lt-0b61c41adf6ba92f2"
 
 	userData, err := getAwsUserData()
 	if err != nil {
 		logging.LogWarn("Failed to get userdata file error: " + err.Error())
-		return err
+		return "", err
 	}
-	userData += "\ndocker run -d --name fragbot -e ACCESS_TOKEN=" + constants.AccessToken + " -e AUTHKEY=" + constants.AuthKey + " -e BACKEND_URI=" + constants.BackendUrl + " -e HYPIXEL_API_KEY=" + constants.HypixelApiKey + " -e BOT_ID=" + botId + " ishaanrao/fragbots:latest"
+	userData += "\ndocker run -d --name fragbot --restart always -e ACCESS_TOKEN=" + constants.AccessToken + " -e AUTHKEY=" + constants.AuthKey + " -e BACKEND_URI=" + constants.BackendUrl + " -e HYPIXEL_API_KEY=" + constants.HypixelApiKey + " -e BOT_ID=" + botId + " ishaanrao/fragbots:latest"
 
 	userDataEncoded := base64.StdEncoding.EncodeToString([]byte(userData))
 	input := &ec2.RunInstancesInput{
@@ -54,14 +54,13 @@ func MakeFragBotServer(botId string) error {
 		MaxCount: aws.Int32(1),
 		UserData: &userDataEncoded,
 	}
-
 	result, err := MakeInstance(context.TODO(), AwsClient, input)
 	if err != nil {
 		logging.LogWarn("Encountered error creating instance: " + err.Error())
-		return err
+		return "", err
 	}
 	logging.Log("Made aws server with id: " + *result.Instances[0].InstanceId)
-	return nil
+	return *result.Instances[0].InstanceId, nil
 }
 
 func getAwsUserData() (string, error) {
@@ -84,6 +83,15 @@ func getAwsUserData() (string, error) {
 	return userData, nil
 }
 
+func DeleteInstance(serverId string) error {
+	instanceIds := []string{serverId}
+	input := &ec2.TerminateInstancesInput{InstanceIds: instanceIds}
+	_, err := AwsClient.TerminateInstances(context.TODO(), input)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func MakeInstance(c context.Context, api EC2CreateInstanceAPI, input *ec2.RunInstancesInput) (*ec2.RunInstancesOutput, error) {
 	return api.RunInstances(c, input)
 }

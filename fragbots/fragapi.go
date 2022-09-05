@@ -61,12 +61,14 @@ type FragBotsUser struct {
 	Whitelisted bool   `json:"whitelisted"`
 	Exclusive   bool   `json:"exclusive"`
 	Active      bool   `json:"active"`
+	Priority    bool   `json:"priority,omitempty"`
 }
 
 type Bot string
 
 const (
-	Exclusive   Bot = "EXCLUSIVE"
+	Priority    Bot = "PRIORITY"
+	Exclusive       = "EXCLUSIVE"
 	Active          = "ACTIVE"
 	Whitelisted     = "WHITELISTED"
 	Verified        = "VERIFIED"

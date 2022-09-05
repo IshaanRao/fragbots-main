@@ -28,7 +28,6 @@ func init() {
 }
 func main() {
 	constants.LoadConsts()
-	// fragaws.Start()
 	database.StartClient()
 	routes.Router = Router
 	routes.InitRoutes()

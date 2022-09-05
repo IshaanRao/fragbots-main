@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
+	"strconv"
 )
 
 // Bot Info Types
@@ -16,6 +17,7 @@ import (
 type BotInfo struct {
 	BotId    string       `json:"botId" bson:"botId"`
 	BotType  Bot          `json:"botType" bson:"botType"`
+	ServerId string       `json:"serverId,omitempty" bson:"serverId,omitempty"`
 	AccInfo  *AccountInfo `json:"accountInfo,omitempty" bson:"accInfo"`
 	DiscInfo *DiscordInfo `json:"discordInfo" bson:"discInfo"`
 }
@@ -43,12 +45,12 @@ type PostBotRequest struct {
 	UserCode string `json:"userCode,omitempty" form:"userCode"`
 }
 
-type RemoveBotRequest struct {
-	BotId string `json:"botId"`
-}
-
 type CreateBotRequest struct {
 	UserCode string `json:"userCode"`
+}
+
+type DeleteBotRequest struct {
+	Delete bool `json:"delete" form:"delete"`
 }
 
 // Response Types
@@ -71,7 +73,8 @@ type MsAuthChannelData struct {
 type Bot string
 
 const (
-	Exclusive   Bot = "EXCLUSIVE"
+	Prioirity   Bot = "Priority"
+	Exclusive       = "EXCLUSIVE"
 	Active          = "ACTIVE"
 	Whitelisted     = "WHITELISTED"
 	Verified        = "VERIFIED"
@@ -139,9 +142,23 @@ func getExclusiveBotInfo() *BotInfo {
 	}
 }
 
+func getPriorityBotInfo() *BotInfo {
+	return &BotInfo{
+		BotId:   "Priority",
+		BotType: Prioirity,
+		DiscInfo: &DiscordInfo{
+			LogWebhook:     constants.PriorityLogWebhook,
+			ConsoleWebhook: constants.PriorityConsoleWebhook,
+		},
+		AccInfo: &AccountInfo{},
+	}
+}
+
 func getBotInfo(botId string) (*BotInfo, error) {
 	var botInfo *BotInfo = nil
 	switch botId {
+	case "Priority":
+		botInfo = getPriorityBotInfo()
 	case "Exclusive":
 		botInfo = getExclusiveBotInfo()
 	case "Active":
@@ -159,17 +176,17 @@ func getBotInfo(botId string) (*BotInfo, error) {
 	return botInfo, nil
 }
 
-func getBotData(c *gin.Context) {
+func GetBot(c *gin.Context) {
 	id := c.Param("botid")
 	if id == "" {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Missing BotID"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Missing BotID"})
 		return
 	}
 
 	var botInfo BotInfo
 	err := database.GetDocument("accounts", bson.D{{"botId", id}}, &botInfo)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid BotID"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid BotID"})
 		return
 	}
 
@@ -177,7 +194,7 @@ func getBotData(c *gin.Context) {
 	err = CheckRefreshMS(&MSa)
 	if err != nil {
 		logging.LogWarn("Failed to check refresh token: " + err.Error())
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Failed to check refresh token"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Failed to check refresh token"})
 		return
 	}
 
@@ -199,6 +216,91 @@ func getBotData(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"botInfo": botInfo})
 }
 
+func DeleteBot(c *gin.Context) {
+	botId := c.Param("botid")
+	var request DeleteBotRequest
+	err := c.Bind(&request)
+	if botId == "" || err != nil {
+		logging.LogWarn("Stop bot request failed invalid request body error:" + err.Error())
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	logging.Log("Got delete bot request, deleting: " + strconv.FormatBool(request.Delete))
+
+	var botInfo BotInfo
+	err = database.GetDocument("accounts", bson.D{{"botId", botId}}, &botInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid BotID"})
+		return
+	}
+	if botInfo.ServerId == "" {
+		if request.Delete {
+			err := database.UpdateDocument("accounts", bson.D{{"botId", botId}}, bson.D{{"botId", "archive_" + botId}})
+			if err != nil {
+				logging.LogWarn("Failed to archive document err, " + err.Error())
+				c.IndentedJSON(http.StatusOK, gin.H{"error": "Failed to update document when archiving"})
+			}
+			c.IndentedJSON(http.StatusOK, gin.H{"success": true})
+			return
+		}
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "No active bot"})
+		return
+	}
+
+	err = fragaws.DeleteInstance(botInfo.ServerId)
+	if err != nil {
+		logging.LogWarn(err.Error())
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Failed to delete instance"})
+		return
+	}
+	if request.Delete {
+		err := database.UpdateDocument("accounts", bson.D{{"botId", botId}}, bson.D{{"botId", "archive_" + botId}})
+		if err != nil {
+			logging.LogWarn("Failed to archive document err, " + err.Error())
+			c.IndentedJSON(http.StatusOK, gin.H{"error": "Failed to update document when archiving"})
+		}
+		c.IndentedJSON(http.StatusOK, gin.H{"success": true})
+		return
+	}
+	err = database.UpdateDocumentDelField("accounts", bson.D{{"botId", botId}}, bson.D{{"serverId", nil}})
+	if err != nil {
+		c.IndentedJSON(http.StatusOK, gin.H{"error": "Failed to update document"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
+
+}
+
+func PutBot(c *gin.Context) {
+	botId := c.Param("botid")
+	if botId == "" {
+		logging.LogWarn("Put bot request failed invalid request body")
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	var botInfo BotInfo
+	err := database.GetDocument("accounts", bson.D{{"botId", botId}}, &botInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid BotID"})
+		return
+	}
+	if botInfo.ServerId != "" {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Bot currently active"})
+		return
+	}
+	id, err := fragaws.MakeFragBotServer(botInfo.BotId)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "error occurred while starting server"})
+		return
+	}
+	err = database.UpdateDocument("accounts", bson.D{{"botId", botId}}, bson.D{{"serverId", id}})
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "error occurred while updating serverid in db PLEASE TELL PRINCE"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
+}
+
 func PostBot(c *gin.Context) {
 	botId := c.Param("botid")
 	var request PostBotRequest
@@ -206,7 +308,7 @@ func PostBot(c *gin.Context) {
 
 	if botId == "" || err != nil || request.Stage == 0 {
 		logging.LogWarn("Post bot request failed invalid request body")
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -219,7 +321,7 @@ func PostBot(c *gin.Context) {
 	if request.Stage == 1 {
 		if request.Password == "" || request.Email == "" {
 			logging.LogWarn("Post bot request failed invalid request body (Stage 1)")
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
@@ -249,7 +351,7 @@ func PostBot(c *gin.Context) {
 	} else if request.Stage == 2 {
 		if request.UserCode == "" {
 			logging.LogWarn("Post bot request failed invalid request body (Stage 1)")
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"Error": "Invalid request body"})
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
@@ -284,11 +386,13 @@ func PostBot(c *gin.Context) {
 		botInfo.AccInfo.UUID = credentials.UUID
 		botInfo.AccInfo.Username = credentials.Username
 		botInfo.AccInfo.AccessToken = credentials.AccessToken
-		err = fragaws.MakeFragBotServer(botInfo.BotId)
+		id, err := fragaws.MakeFragBotServer(botInfo.BotId)
 		if err != nil {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while starting server"})
 			return
 		}
+
+		botInfo.ServerId = id
 
 		_, err = database.InsertDocument("accounts", botInfo)
 
