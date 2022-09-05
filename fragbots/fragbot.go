@@ -41,6 +41,8 @@ func startFragBot() {
 	queueLen = 0
 
 	switch FragData.BotInfo.BotType {
+	case Priority:
+		waitTime = priorityWaitTime
 	case Exclusive:
 		waitTime = exclusiveWaitTime
 	case Active:
