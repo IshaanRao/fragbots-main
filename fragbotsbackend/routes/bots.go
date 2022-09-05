@@ -73,7 +73,7 @@ type MsAuthChannelData struct {
 type Bot string
 
 const (
-	Prioirity   Bot = "Priority"
+	Priority    Bot = "PRIORITY"
 	Exclusive       = "EXCLUSIVE"
 	Active          = "ACTIVE"
 	Whitelisted     = "WHITELISTED"
@@ -145,7 +145,7 @@ func getExclusiveBotInfo() *BotInfo {
 func getPriorityBotInfo() *BotInfo {
 	return &BotInfo{
 		BotId:   "Priority",
-		BotType: Prioirity,
+		BotType: Priority,
 		DiscInfo: &DiscordInfo{
 			LogWebhook:     constants.PriorityLogWebhook,
 			ConsoleWebhook: constants.PriorityConsoleWebhook,
