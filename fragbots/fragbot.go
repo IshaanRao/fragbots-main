@@ -209,7 +209,7 @@ func onParty(ign string) {
 	_, err = logWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
 		SetEmbeds(discord.NewEmbedBuilder().
 			SetTitle(botName+" Logs").
-			SetDescription(ign+" just partied "+botName+"!\nQueue Position: "+strconv.FormatInt(int64(queueLen), 10)+"\nEstimated Time: `"+strconv.FormatInt(int64((queueLen-1)*(waitTime+1)), 10)+" seconds"+"`").
+			SetDescription(ign+" just partied "+botName+"!\nQueue Position: "+strconv.FormatInt(int64(queueLen), 10)+"\nEstimated Time: `"+strconv.FormatInt(int64(((queueLen-1)*(waitTime+1))+1), 10)+" seconds"+"`").
 			SetThumbnail("https://mc-heads.net/avatar/"+ign).
 			SetTimestamp(time.Now()).
 			SetColor(DefaultEmbedColor).
