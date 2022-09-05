@@ -239,6 +239,7 @@ func DeleteBot(c *gin.Context) {
 			if err != nil {
 				logging.LogWarn("Failed to archive document err, " + err.Error())
 				c.IndentedJSON(http.StatusOK, gin.H{"error": "Failed to update document when archiving"})
+				return
 			}
 			c.IndentedJSON(http.StatusOK, gin.H{"success": true})
 			return
@@ -258,6 +259,7 @@ func DeleteBot(c *gin.Context) {
 		if err != nil {
 			logging.LogWarn("Failed to archive document err, " + err.Error())
 			c.IndentedJSON(http.StatusOK, gin.H{"error": "Failed to update document when archiving"})
+			return
 		}
 		c.IndentedJSON(http.StatusOK, gin.H{"success": true})
 		return
@@ -364,12 +366,14 @@ func PostBot(c *gin.Context) {
 		if !ok {
 			logging.LogWarn("Invalid User Code")
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid User Code"})
+			return
 		}
 
 		authData := <-msData.Channel
 		if authData == nil {
 			logging.LogWarn("Error occurred while checking data most likely timeout")
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Error occured while checking data"})
+			return
 		}
 
 		msData.BotData.AccInfo.AuthData = *authData

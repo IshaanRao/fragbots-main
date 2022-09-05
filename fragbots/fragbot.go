@@ -182,7 +182,7 @@ func onParty(ign string) {
 		return
 	}
 	botType := FragData.BotInfo.BotType
-	if fragBotUser == nil || (botType == Exclusive && !fragBotUser.Exclusive) || (botType == Active && !fragBotUser.Active) || (botType == Whitelisted && !fragBotUser.Whitelisted) || (botType == Verified && fragBotUser.Discord == "unknown") {
+	if fragBotUser == nil || (botType == Priority && !fragBotUser.Priority) || fragBotUser.Discord == "unknown" || ((!fragBotUser.Priority && !fragBotUser.Exclusive) && ((botType == Exclusive) || (botType == Whitelisted && !fragBotUser.Whitelisted) || (botType == Active && !fragBotUser.Active))) {
 		botLog("(No Access) Rejected party invite from: " + ign)
 		return
 	}

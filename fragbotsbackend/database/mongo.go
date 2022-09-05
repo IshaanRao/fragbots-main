@@ -60,6 +60,9 @@ func UpdateDocument(collection string, filter interface{}, update interface{}) e
 func UpdateDocumentDelField(collection string, filter interface{}, update interface{}) error {
 	return MongoClient.Database("FragDatabase").Collection(collection).FindOneAndUpdate(context.TODO(), filter, bson.D{{"$unset", update}}).Err()
 }
+func UpdateDocumentIncField(collection string, filter interface{}, update interface{}) error {
+	return MongoClient.Database("FragDatabase").Collection(collection).FindOneAndUpdate(context.TODO(), filter, bson.D{{"$inc", update}}).Err()
+}
 
 func DeleteDocument(collection string, filter interface{}) bool {
 	res := MongoClient.Database("FragDatabase").Collection(collection).FindOneAndDelete(context.TODO(), filter)

@@ -48,11 +48,6 @@ type MojangResponse struct {
 	UUID string `json:"id"`
 }
 
-type FragBotsUserResponse struct {
-	Status int          `json:"status"`
-	User   FragBotsUser `json:"data"`
-}
-
 type FragBotsUser struct {
 	Id          string `json:"_id"`
 	TimesUsed   int    `json:"timesused"`
@@ -86,7 +81,7 @@ func getFragBotsUser(username string) (*FragBotsUser, error) {
 		return nil, err
 	}
 
-	resp, err := get(fragbotBackend+"/users/"+userUUID.String(), nil)
+	resp, err := get(BackendUrl+"/users/"+userUUID.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -102,13 +97,13 @@ func getFragBotsUser(username string) (*FragBotsUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	fragBotResp := &FragBotsUserResponse{}
-	err = json.Unmarshal(b, fragBotResp)
+	fragBotResp := FragBotsUser{}
+	err = json.Unmarshal(b, &fragBotResp)
 	if err != nil {
 		return nil, err
 	}
 
-	return &fragBotResp.User, nil
+	return &fragBotResp, nil
 }
 
 func deleteBot() error {
@@ -140,12 +135,12 @@ func addUse(uuid string) error {
 	payload := strings.NewReader("uuid=" + uuid)
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", fragbotBackend+"/uses/adduse", payload)
+	req, err := http.NewRequest("POST", BackendUrl+"/uses/", payload)
 	if err != nil {
 		return err
 	}
 
-	req.Header.Add("authkey", AuthKey)
+	req.Header.Add("access-token", AccessToken)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	res, err := client.Do(req)

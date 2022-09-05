@@ -16,6 +16,10 @@ func InitRoutes() {
 	botInfo.POST("/:botid", PostBot)
 	botInfo.DELETE("/:botid", DeleteBot)
 	botInfo.PUT("/:botid", PutBot)
+	Router.GET("/users/:uuid", GetUser)
+	Router.GET("/uses", GetUses)
+	Router.POST("/uses", PostUses)
+
 }
 
 func auth() gin.HandlerFunc {
