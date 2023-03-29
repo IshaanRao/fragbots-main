@@ -29,7 +29,7 @@ const DefaultEmbedColor = 15954943
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		LogFatal("No ..env file found")
+		LogFatal("No .env file found")
 	}
 
 	Token = getEnv("TOKEN")

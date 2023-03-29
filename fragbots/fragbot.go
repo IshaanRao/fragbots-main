@@ -2,13 +2,9 @@ package main
 
 import (
 	"context"
-	"errors"
-	"github.com/Tnze/go-mc/bot"
-	"github.com/Tnze/go-mc/bot/basic"
 	"github.com/Tnze/go-mc/chat"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/golang-queue/queue"
-	"github.com/google/uuid"
 	"regexp"
 	"strconv"
 	"strings"
@@ -60,44 +56,10 @@ func startFragBot() {
 		botLog(err.Error())
 		return
 	}
-	botLog("registered event listeners")
-	basic.EventsListener{ChatMsg: onChat, Disconnect: onDc, GameStart: onStart}.Attach(Client.Client)
-	botLog("started main loop")
-	for {
-
-		if Client.ShutDown {
-			botLog("Shutdown client goroutine")
-			stopBot()
-			return
-		}
-
-		if err = Client.Client.HandleGame(); err == nil {
-			botLog("Unexpected error has occurred!!")
-			stopBot()
-			return
-		}
-
-		if err2 := new(bot.PacketHandlerError); errors.As(err, err2) {
-			if err := new(bot.DisconnectErr); errors.As(err2, err) {
-				println("Disconnect: ", err.Error())
-				stopBot()
-				return
-			} else {
-				botLog("PacketHandlerError Error: " + err.Error())
-				stopBot()
-				return
-			}
-		} else {
-			botLog("Unexpected Error: " + err.Error())
-			stopBot()
-			return
-		}
-	}
-	botLog("Fragbot main loop stopped")
 }
 
 // onChat function that gets called when bot recieves a chat message also calls fragbotparty function
-func onChat(c chat.Message, _ byte, _ uuid.UUID) error {
+func onChat(c chat.Message, _ bool) error {
 	msg := c.ClearString()
 	botLog(msg)
 

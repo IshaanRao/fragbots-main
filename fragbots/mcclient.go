@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/bot/basic"
 	"github.com/Tnze/go-mc/net/packet"
@@ -41,7 +42,37 @@ func (client *McClient) startClient() error {
 
 	}
 
-	return nil
+	botLog("started main loop")
+	for {
+
+		if Client.ShutDown {
+			botLog("Shutdown client goroutine")
+			stopBot()
+			return nil
+		}
+
+		if err = Client.Client.HandleGame(); err == nil {
+			botLog("Unexpected error has occurred!!")
+			stopBot()
+			return nil
+		}
+
+		if err2 := new(bot.PacketHandlerError); errors.As(err, err2) {
+			if err := new(bot.DisconnectErr); errors.As(err2, err) {
+				println("Disconnect: ", err.Error())
+				stopBot()
+				return nil
+			} else {
+				botLog("PacketHandlerError Error: " + err.Error())
+				stopBot()
+				return nil
+			}
+		} else {
+			botLog("Unexpected Error: " + err.Error())
+			stopBot()
+			return nil
+		}
+	}
 }
 
 // setupBot sets the necessary values for the client
@@ -54,7 +85,7 @@ func (client *McClient) setupBot() {
 		AsTk: client.Data.Ssid,
 	}
 
-	client.Player = basic.NewPlayer(client.Client, basic.DefaultSettings)
+	client.Player = basic.NewPlayer(client.Client, basic.DefaultSettings, basic.EventsListener{SystemMsg: onChat, Disconnect: onDc, GameStart: onStart})
 }
 
 // joinHypixel Makes FragBot join hypixel
