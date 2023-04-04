@@ -1,11 +1,13 @@
-FROM golang:alpine as build
-# Redundant, current golang images already include ca-certificates
-RUN apk --no-cache add ca-certificates
+FROM golang:alpine
 
-FROM scratch
+WORKDIR /app
 
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
 
-COPY ./fragbots /go/bin/fragbots
+COPY *.go ./
 
-CMD ["/go/bin/fragbots"]
+RUN go build -o /fragbots
+
+CMD ["/fragbots"]

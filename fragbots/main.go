@@ -21,6 +21,7 @@ var ReqClient = req.C().
 	SetTimeout(20 * time.Second)
 
 func main() {
+	botLog("Docker test")
 	err := godotenv.Load()
 	if err != nil {
 		botLog("NO ENV FILE FOUND MAY CAUSE ERRORS")
