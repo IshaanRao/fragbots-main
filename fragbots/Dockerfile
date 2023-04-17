@@ -10,4 +10,6 @@ COPY *.go ./
 
 RUN go build -o /fragbots
 
+EXPOSE 2468
+
 CMD ["/fragbots"]

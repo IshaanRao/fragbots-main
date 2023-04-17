@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/imroc/req/v3"
 	"github.com/joho/godotenv"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -15,21 +16,22 @@ var FragData *FragBotData
 var BackendUrl string
 var AccessToken string
 var HypixelApiKey string
-var AuthKey string
+
+var addr = "localhost:2468"
+
 var BotId string
 var ReqClient = req.C().
 	SetTimeout(20 * time.Second)
 
 func main() {
-	botLog("Docker test")
+	go startWsServer()
 	err := godotenv.Load()
 	if err != nil {
-		botLog("NO ENV FILE FOUND MAY CAUSE ERRORS")
+		botLogWarn("NO ENV FILE FOUND MAY CAUSE ERRORS")
 	}
 
 	BackendUrl = getEnv("BACKEND_URI")
 	AccessToken = getEnv("ACCESS_TOKEN")
-	AuthKey = getEnv("AUTHKEY")
 	HypixelApiKey = getEnv("HYPIXEL_API_KEY")
 	BotId = getEnv("BOT_ID")
 
@@ -89,7 +91,7 @@ func startBot() {
 }
 
 func getFragData(botId string) {
-	if res, err := ReqClient.R().SetHeader("access-token", AccessToken).SetResult(&FragData).Get(BackendUrl + "/bots/" + botId); err != nil || res.StatusCode != 200 {
+	if res, err := ReqClient.R().SetHeader("access-token", AccessToken).SetSuccessResult(&FragData).Get(BackendUrl + "/bots/" + botId); err != nil || res.StatusCode != 200 {
 		botLogFatal("Failed to get FragBotData error: " + err.Error())
 	}
 }
@@ -100,4 +102,10 @@ func getEnv(key string) string {
 		botLogFatal("No" + key + "found in env")
 	}
 	return val
+}
+
+func startWsServer() {
+	http.HandleFunc("/ws", wsHandler)
+	botLog("Started websocket server at: " + addr)
+	botLogFatal(http.ListenAndServe(addr, nil).Error())
 }
