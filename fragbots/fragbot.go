@@ -194,13 +194,17 @@ func onParty(ign string) {
 	if queueCommand(ign) != nil {
 		botLog("Failed to queue command for user: " + ign)
 		return
+	} else {
+		botLog("Successfully queued command for user: " + ign)
 	}
 
 }
 
 func queueCommand(ign string) error {
 	err := commandQueue.QueueTask(func(ctx context.Context) error {
+		botLog("Started processing of: " + ign + "'s invite, Queue Length: " + strconv.Itoa(commandQueue.SubmittedTasks()))
 		time.Sleep(1000 * time.Millisecond)
+		botLog("Accepting invite from: " + ign)
 		err := Client.chat("/party accept " + ign)
 		if err != nil {
 			queueLen--
@@ -209,6 +213,7 @@ func queueCommand(ign string) error {
 			return nil
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
+		botLog("Leaving party of: " + ign)
 		err = Client.chat("/party leave")
 		if err != nil {
 			botLog("Error occurred while leaving party of: " + ign)

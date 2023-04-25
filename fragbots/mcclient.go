@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/bot/basic"
-	"github.com/Tnze/go-mc/net/packet"
+	"github.com/Tnze/go-mc/bot/msg"
 	"github.com/disgoorg/disgo/discord"
 	"strings"
 	"time"
@@ -12,13 +12,14 @@ import (
 
 // McClient holds data for the client
 type McClient struct {
-	Email    string
-	Password string
-	Started  bool
-	Data     *UserData
-	Client   *bot.Client
-	Player   *basic.Player
-	ShutDown bool
+	Email       string
+	Password    string
+	Started     bool
+	Data        *UserData
+	Client      *bot.Client
+	Player      *basic.Player
+	ChatHandler *msg.Manager
+	ShutDown    bool
 }
 
 // UserData holds necessary data to log on to hypixel
@@ -33,7 +34,6 @@ var serverIp = "play.hypixel.net"
 // startClient starts the client to log on to hypixel
 func (client *McClient) startClient() error {
 	userData := client.getUserData()
-
 	client.Data = userData
 	client.setupBot()
 	err := client.joinHypixel()
@@ -86,6 +86,7 @@ func (client *McClient) setupBot() {
 	}
 
 	client.Player = basic.NewPlayer(client.Client, basic.DefaultSettings, basic.EventsListener{SystemMsg: onChat, Disconnect: onDc, GameStart: onStart})
+	client.ChatHandler = msg.New(client.Client, Client.Player, msg.EventsHandler{})
 }
 
 // joinHypixel Makes FragBot join hypixel
@@ -122,10 +123,7 @@ func (client *McClient) joinHypixel() error {
 
 // chat Sends chat messages through minecraft client
 func (client *McClient) chat(msg string) error {
-	return client.Client.Conn.WritePacket(packet.Marshal(
-		0x03,
-		packet.String(msg),
-	))
+	return client.ChatHandler.SendMessage(msg)
 }
 
 // getUserData Gets data required for login from microsoft
