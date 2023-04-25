@@ -19,7 +19,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version-file: 'fragbots/go.mod'
-      - run: env GOARCH=arm64 go build
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
