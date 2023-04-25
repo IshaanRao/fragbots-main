@@ -92,6 +92,9 @@ func startBot() {
 
 func getFragData(botId string) {
 	if res, err := ReqClient.R().SetHeader("access-token", AccessToken).SetSuccessResult(&FragData).Get(BackendUrl + "/bots/" + botId); err != nil || res.StatusCode != 200 {
+		if err == nil {
+			botLog("Failed to get fragbots data, status code:" + strconv.Itoa(res.StatusCode) + ", res: " + res.String())
+		}
 		botLogFatal("Failed to get FragBotData error: " + err.Error())
 	}
 }
