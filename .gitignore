@@ -43,6 +43,7 @@ build/Release
 node_modules/
 jspm_packages/
 ts-out/
+pkg/
 
 # TypeScript v1 declaration files
 typings/

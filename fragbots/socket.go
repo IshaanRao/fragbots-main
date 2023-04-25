@@ -15,7 +15,12 @@ type WsError struct {
 	Error string `json:"eraror"`
 }
 
+var commands = map[string]func(data interface{}){
+	"StartBot": startBotCmd,
+}
 var upgrader = websocket.Upgrader{}
+var connected = true
+var client *websocket.Conn
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -25,7 +30,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	botLog("Started websocket connection")
-	defer c.Close()
+	connected = true
+	client = c
+	defer func() {
+		c.Close()
+		connected = false
+		client = nil
+	}()
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
@@ -54,15 +65,23 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			continue
 		}
-		handleCommand(cmd, c)
+		handleCommand(cmd)
 	}
 }
 
-func handleCommand(command WsCommand, c *websocket.Conn) *error {
+func handleCommand(command WsCommand) {
 	botLog("Processing command with name: " + *command.Name)
-	err := c.WriteMessage(1, []byte("aaaa"))
+	err := client.WriteMessage(1, []byte("aaaa"))
 	if err != nil {
 		botLogWarn("Error writing message to client: " + err.Error())
+		return
 	}
-	return nil
+
+	return
+}
+
+func startBotCmd(startData interface{}) {
+	//data := startData.(FragBotData)
+	//startBot(data)
+
 }
