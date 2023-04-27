@@ -28,7 +28,7 @@ var AwsClient *ec2.Client
 func init() {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		logging.LogFatal("Failed to initilalize AWS Configuration: " + err.Error())
+		logging.LogFatal("Failed to initialize AWS Configuration: " + err.Error())
 	}
 
 	AwsClient = ec2.NewFromConfig(cfg)
@@ -68,7 +68,12 @@ func getAwsUserData() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			logging.LogWarn("Error while closing aws file: " + err.Error())
+		}
+	}(file)
 
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()

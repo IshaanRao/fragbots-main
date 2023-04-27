@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"github.com/Tnze/go-mc/chat"
 	"github.com/disgoorg/disgo/discord"
-	"github.com/golang-queue/queue"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,7 +13,7 @@ import (
 var partyInviteRegex = regexp.MustCompile("(\\w*\\b) has invited you to join .* party!")
 
 // Queue for handling fragbot party commands
-var commandQueue *queue.Queue
+var commandQueue FragQueue
 
 // Wait time constants
 var priorityWaitTime = 10
@@ -25,16 +23,13 @@ var whitelistedWaitTime = 5
 var verifiedWaitTime = 5
 var waitTime = 0
 
-var queueLen int
-
 var sentJoin bool
 
 // startFragBot starts main fragbot program and creates the mc client
 func startFragBot() {
 	botLog("Reset variables and created command queue")
-	commandQueue = queue.NewPool(1)
+	commandQueue = NewFragQueue()
 	sentJoin = false
-	queueLen = 0
 
 	switch FragData.BotInfo.BotType {
 	case Priority:
@@ -77,7 +72,7 @@ func stopBot() {
 	if err != nil {
 		botLog("Failed to close client error: " + err.Error())
 	}
-	commandQueue.Shutdown()
+	commandQueue.Stop()
 }
 
 func onStart() error {
@@ -151,6 +146,7 @@ func onParty(ign string) {
 		botLog("(No Access) Rejected party invite from: " + ign)
 		return
 	}
+	queueLen := commandQueue.GetTotalQueuedTasks()
 	if (queueLen >= 10 && (botType == Verified || botType == Whitelisted || botType == Active)) || (queueLen >= 5 && (botType == Exclusive || botType == Priority)) {
 		_, err = logWebhook.CreateMessage(discord.NewWebhookMessageCreateBuilder().
 			SetEmbeds(discord.NewEmbedBuilder().
@@ -191,26 +187,20 @@ func onParty(ign string) {
 	}
 
 	// Queues user in fragbot command Queue
-	if queueCommand(ign) != nil {
-		botLog("Failed to queue command for user: " + ign)
-		return
-	} else {
-		botLog("Successfully queued command for user: " + ign)
-	}
-
+	queueCommand(ign)
+	botLog("Successfully queued command for user: " + ign)
 }
 
-func queueCommand(ign string) error {
-	err := commandQueue.QueueTask(func(ctx context.Context) error {
-		botLog("Started processing of: " + ign + "'s invite, Queue Length: " + strconv.Itoa(commandQueue.SubmittedTasks()))
+func queueCommand(ign string) {
+	commandQueue.AddTask(func() {
+		botLog("Started processing of: " + ign + "'s invite, Queue Length: " + strconv.Itoa(commandQueue.GetTotalQueuedTasks()))
 		time.Sleep(1000 * time.Millisecond)
 		botLog("Accepting invite from: " + ign)
 		err := Client.chat("/party accept " + ign)
 		if err != nil {
-			queueLen--
 			botLog("Error occurred while accepting party invite from: " + ign)
 			botLog("Error: " + err.Error())
-			return nil
+			return
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
 		botLog("Leaving party of: " + ign)
@@ -219,11 +209,6 @@ func queueCommand(ign string) error {
 			botLog("Error occurred while leaving party of: " + ign)
 			botLog("Error: " + err.Error())
 		}
-		queueLen--
-		return nil
+		return
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
