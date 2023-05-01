@@ -12,7 +12,15 @@ type WsCommand struct {
 }
 
 type WsError struct {
-	Error string `json:"eraror"`
+	Error string `json:"error"`
+}
+
+type FragInitData struct {
+	BotData       FragBotData
+	BackendUrl    string
+	AccessToken   string
+	HypixelApiKey string
+	BotId         string
 }
 
 var commands = map[string]func(data interface{}){
@@ -81,7 +89,12 @@ func handleCommand(command WsCommand) {
 }
 
 func startBotCmd(startData interface{}) {
-	//data := startData.(FragBotData)
-	//startBot(data)
+	data := startData.(FragInitData)
+	FragData = &data.BotData
+	BackendUrl = data.BackendUrl
+	AccessToken = data.AccessToken
+	HypixelApiKey = data.HypixelApiKey
+	BotId = data.BotId
+	startBot()
 
 }

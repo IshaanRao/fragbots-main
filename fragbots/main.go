@@ -3,10 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/imroc/req/v3"
-	"github.com/joho/godotenv"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -24,19 +21,8 @@ var ReqClient = req.C().
 	SetTimeout(20 * time.Second)
 
 func main() {
-	//go startWsServer()
-	err := godotenv.Load()
-	if err != nil {
-		botLogWarn("NO ENV FILE FOUND MAY CAUSE ERRORS")
-	}
-
-	BackendUrl = getEnv("BACKEND_URI")
-	AccessToken = getEnv("ACCESS_TOKEN")
-	HypixelApiKey = getEnv("HYPIXEL_API_KEY")
-	BotId = getEnv("BOT_ID")
-
-	go startBot()
-	for {
+	startWsServer()
+	/*for {
 		time.Sleep(30 * time.Second)
 		if FragData == nil {
 			continue
@@ -55,19 +41,16 @@ func main() {
 		botLog("Waiting before starting fragbot")
 		time.Sleep(30 * time.Second)
 		go startBot()
-	}
+	}*/
 
 }
 
 func startBot() {
 	botLog("Starting fragbots")
-	getFragData(BotId)
 	fbDataJson, err := json.MarshalIndent(FragData, "", "  ")
 	if err != nil {
 		botLogFatal("Something went wrong when serializing data: " + err.Error())
 	}
-
-	botLog("Successfully retrieved all data for FragBot starting bot...")
 	botLog("Starting Data:")
 	botLog(string(fbDataJson))
 	if Client == nil {
@@ -90,22 +73,14 @@ func startBot() {
 	startFragBot()
 }
 
-func getFragData(botId string) {
+/*func getFragData(botId string) {
 	if res, err := ReqClient.R().SetHeader("access-token", AccessToken).SetSuccessResult(&FragData).Get(BackendUrl + "/bots/" + botId); err != nil || res.StatusCode != 200 {
 		if err == nil {
 			botLog("Failed to get fragbots data, status code:" + strconv.Itoa(res.StatusCode) + ", res: " + res.String())
 		}
 		botLogFatal("Failed to get FragBotData error: " + err.Error())
 	}
-}
-
-func getEnv(key string) string {
-	val := os.Getenv(key)
-	if val == "" {
-		botLogFatal("No" + key + "found in env")
-	}
-	return val
-}
+}*/
 
 func startWsServer() {
 	http.HandleFunc("/ws", wsHandler)
