@@ -2,17 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
 )
 
 type WsCommand struct {
-	Name *string     `json:"name,omitempty"`
+	Name string      `json:"name"`
 	Data interface{} `json:"data,omitempty"`
-}
-
-type WsError struct {
-	Error string `json:"error"`
 }
 
 type FragInitData struct {
@@ -25,6 +22,7 @@ type FragInitData struct {
 
 var commands = map[string]func(data interface{}){
 	"StartBot": startBotCmd,
+	"Error":    handleError,
 }
 var upgrader = websocket.Upgrader{}
 var connected = true
@@ -45,45 +43,47 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		connected = false
 		client = nil
 	}()
+
+	sendCommand(WsCommand{Name: "Connected"})
 	for {
-		mt, message, err := c.ReadMessage()
+		_, message, err := c.ReadMessage()
 		if err != nil {
-			botLogWarn("Error reading ws message: " + err.Error())
-			break
+			botLogFatal("Websocket Closed, reason: " + err.Error())
+			return
 		}
 		cmd := WsCommand{}
 		err = json.Unmarshal(message, &cmd)
 		if err != nil {
 			botLogWarn("Error parsing ws message: " + err.Error())
-			marshal, _ := json.Marshal(WsError{Error: "Something went wrong"})
-			err = c.WriteMessage(mt, marshal)
-			if err != nil {
-				botLogWarn("Error writing message to client: " + err.Error())
-				break
-			}
+			sendCommand(WsCommand{Name: "Error", Data: "Something went wrong"})
 			continue
 		}
-		if cmd.Name == nil {
+		if cmd.Name == "" {
 			botLogWarn("Invalid command recieved: " + string(message))
-			marshal, _ := json.Marshal(WsError{Error: "Invalid Command"})
-			err = c.WriteMessage(mt, marshal)
-			if err != nil {
-				botLogWarn("Error writing message to client: " + err.Error())
-				break
-			}
+			sendCommand(WsCommand{Name: "Error", Data: "Invalid Command"})
 			continue
 		}
 		handleCommand(cmd)
 	}
 }
 
-func handleCommand(command WsCommand) {
-	botLog("Processing command with name: " + *command.Name)
-	err := client.WriteMessage(1, []byte("aaaa"))
+func sendCommand(command WsCommand) {
+	marshal, _ := json.Marshal(command)
+	err := client.WriteMessage(websocket.TextMessage, marshal)
 	if err != nil {
-		botLogWarn("Error writing message to client: " + err.Error())
+		botLogFatal("Failed to write message to client: " + err.Error())
+	}
+	return
+}
+
+func handleCommand(command WsCommand) {
+	botLog("Processing command with name: " + command.Name)
+	f, ok := commands[command.Name]
+	if !ok {
+		sendCommand(WsCommand{Name: "Error", Data: "Invalid Command"})
 		return
 	}
+	f(command.Data)
 
 	return
 }
@@ -97,4 +97,10 @@ func startBotCmd(startData interface{}) {
 	BotId = data.BotId
 	startBot()
 
+}
+
+func handleError(data interface{}) {
+	var errMsg string
+	_ = fmt.Sprintf(errMsg, data)
+	botLogWarn("Recieved Error: " + errMsg)
 }

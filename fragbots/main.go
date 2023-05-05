@@ -15,7 +15,7 @@ var AccessToken string
 var HypixelApiKey string
 
 var addr = "localhost:2468"
-
+var srv = &http.Server{Addr: addr}
 var BotId string
 var ReqClient = req.C().
 	SetTimeout(20 * time.Second)
@@ -83,7 +83,8 @@ func startBot() {
 }*/
 
 func startWsServer() {
+
 	http.HandleFunc("/ws", wsHandler)
 	botLog("Started websocket server at: " + addr)
-	botLogFatal(http.ListenAndServe(addr, nil).Error())
+	botLogFatal(srv.ListenAndServe().Error())
 }
