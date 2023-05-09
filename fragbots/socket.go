@@ -83,13 +83,28 @@ func handleCommand(command WsCommand) {
 		sendCommand(WsCommand{Name: "Error", Data: "Invalid Command"})
 		return
 	}
+	botLog(fmt.Sprintf("%v", command.Data))
 	f(command.Data)
 
 	return
 }
 
+func mapToInterface(mapData any, inter any) error {
+	data, err := json.Marshal(mapData)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, inter)
+	return err
+}
+
 func startBotCmd(startData interface{}) {
-	data := startData.(FragInitData)
+	var data FragInitData
+	err := mapToInterface(startData, &data)
+	if err != nil {
+		sendCommand(WsCommand{Name: "Error", Data: "Failed to parse starting data"})
+		botLogFatal("Failed to load starting data")
+	}
 	FragData = &data.BotData
 	BackendUrl = data.BackendUrl
 	AccessToken = data.AccessToken

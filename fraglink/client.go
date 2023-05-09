@@ -4,14 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/imroc/req/v3"
 	"log"
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 )
 
 var conn *websocket.Conn
+
+var ReqClient = req.C().
+	SetTimeout(20 * time.Second)
+
+type FragInitData struct {
+	BotData       interface{}
+	BackendUrl    string
+	AccessToken   string
+	HypixelApiKey string
+	BotId         string
+}
 
 type WsCommand struct {
 	Name string      `json:"name,omitempty"`
@@ -118,5 +131,25 @@ func handleError(data interface{}) {
 
 func connected(data interface{}) {
 	Log("Successfully connected to server, sending start bot command")
-	sendCommand(WsCommand{Name: "StartBot"})
+	var FragData = getFragData(BotId)
+	var resp = FragInitData{
+		BotData:       FragData,
+		BackendUrl:    BackendUrl,
+		AccessToken:   AccessToken,
+		HypixelApiKey: HypixelApiKey,
+		BotId:         BotId,
+	}
+	sendCommand(WsCommand{Name: "StartBot", Data: resp})
+
+}
+
+func getFragData(botId string) interface{} {
+	var FragData interface{}
+	if res, err := ReqClient.R().SetHeader("access-token", AccessToken).SetSuccessResult(&FragData).Get(BackendUrl + "/bots/" + botId); err != nil || res.StatusCode != 200 {
+		if err == nil {
+			LogFatal("Failed to get fragbots data, status code:" + strconv.Itoa(res.StatusCode) + ", res: " + res.String())
+		}
+		LogFatal("Failed to get FragBotData error: " + err.Error())
+	}
+	return FragData
 }
