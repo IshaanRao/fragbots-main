@@ -14,30 +14,29 @@ type WsCommand struct {
 }
 
 // commands is a map that stores all commands that can be processed
-var commands = map[string]func(data interface{}){
+var commands = map[string]func(data interface{}) error{
 	"StartBot": startBotCmd,
 	"Error":    handleError,
 }
 
 // handleCommand takes command name and calls the command handler
-func handleCommand(command WsCommand) {
-	logging.LogWarn("Processing command with name:" + command.Name)
+func handleCommand(command WsCommand) error {
+	logging.Log("Processing command with name:" + command.Name)
 	f, ok := commands[command.Name]
 	if !ok {
 		sendCommand(WsCommand{Name: "Error", Data: "Invalid Command"})
-		return
+		return nil
 	}
-	f(command.Data)
-	return
+	return f(command.Data)
 }
 
 // sendCommand sends a WsCommand to webhook connection
 func sendCommand(command WsCommand) {
 	marshal, _ := json.Marshal(command)
-	err := wsClient.WriteMessage(websocket.TextMessage, marshal)
+	err := conn.WriteMessage(websocket.TextMessage, marshal)
 	if err != nil {
 		logging.LogWarn("Failed to write message to client, shutting down ws:", err)
-		err := wsClient.Close()
+		err := conn.Close()
 		if err != nil {
 			logging.LogWarn("Error closing client:", err)
 			return
@@ -47,22 +46,23 @@ func sendCommand(command WsCommand) {
 }
 
 // startBotCmd starts the fragbot and receives the bot data
-func startBotCmd(rawData interface{}) {
+func startBotCmd(rawData interface{}) error {
 	var data client.BotData
 	err := mapToInterface(rawData, &data)
 	if err != nil {
 		sendCommand(WsCommand{Name: "Error", Data: "Failed to parse starting data"})
 		logging.LogFatal("Failed to parse starting data (should never happen)")
 	}
+
 	err = client.StartClient(data)
 	if err != nil {
 		logging.LogWarn("Error running bot, shutting down ws:", err)
-		err := wsClient.Close()
+		err := conn.Close()
 		if err != nil {
 			logging.LogWarn("Error closing client:", err)
 		}
-		return
 	}
+	return nil
 
 }
 
@@ -75,8 +75,8 @@ func mapToInterface(mapData any, inter any) error {
 	return err
 }
 
-func handleError(data interface{}) {
-	var errMsg string
-	_ = fmt.Sprintf(errMsg, data)
+func handleError(data interface{}) error {
+	errMsg := fmt.Sprint(data)
 	logging.LogWarn("Websocket received error:", errMsg)
+	return nil
 }

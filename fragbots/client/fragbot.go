@@ -66,7 +66,7 @@ func (fb *FragBot) onStart() error {
 		return nil
 	}
 	fb.sentJoin = true
-	//TODO send join webhook
+	sendEmbed(fb.data, "FragBot has joined Hypixel!")
 	return nil
 }
 
@@ -74,11 +74,9 @@ func (fb *FragBot) onStart() error {
 func (fb *FragBot) onDc(reason chat.Message) error {
 	logging.LogWarn("Bot Kicked Reason:" + reason.String())
 	if strings.Contains(reason.String(), "banned") {
-		// TODO send bot embed
 		return errors.New("bot banned: " + reason.String())
 	}
 
-	//TODO send kicked embed
 	return errors.New("bot kicked:" + reason.String())
 }
 
@@ -114,14 +112,14 @@ func (fb *FragBot) onParty(ign string) {
 	}
 	queueLen := fb.Queue.GetTotalQueuedTasks()
 	if (queueLen >= 10 && (botType == Verified || botType == Whitelisted || botType == Active)) || (queueLen >= 5 && (botType == Exclusive || botType == Priority)) {
-		// TODO q full embed
+		sendEmbed(fb.data, "Rejected party invite from: "+ign+", queue full!")
 		logging.Log("(Queue Full) Rejected party invite from: " + ign)
 		return
 	}
 
 	queueLen++
 
-	// TODO party embed
+	sendEmbedThumbnail(fb.data, ign+" just partied "+fb.data.AccountInfo.Username+"!\nQueue Position: "+strconv.FormatInt(int64(queueLen), 10)+"\nEstimated Time: `"+strconv.FormatInt(int64(((queueLen-1)*(fb.waitTime+1))+1), 10)+" seconds"+"`", "https://mc-heads.net/avatar/"+ign)
 
 	logging.Log("Received party invite from: " + ign)
 	if err := fb.requester.addUse(fragBotUser.Id); err != nil {

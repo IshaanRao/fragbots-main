@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	err := api.StartApi()
+	err := api.StartClient()
 	if err != nil {
 		logging.LogFatal("Shutdown: ", err)
 	}

@@ -113,6 +113,7 @@ dist
 #Intelij File
 .idea
 *.iml
+.run
 
 #Env files
 *.env

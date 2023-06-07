@@ -7,6 +7,7 @@ import (
 	"github.com/Prince/fragbots/logging"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/bot/basic"
+	"github.com/Tnze/go-mc/bot/msg"
 	"github.com/Tnze/go-mc/chat/sign"
 	"github.com/Tnze/go-mc/data/packetid"
 	pk "github.com/Tnze/go-mc/net/packet"
@@ -18,6 +19,7 @@ import (
 type BotData struct {
 	BotId       string `json:"botId"`
 	BotType     Bot    `json:"botType"`
+	WebhookUrl  string `json:"webhookUrl"`
 	AccountInfo struct {
 		Uuid        string `json:"uuid"`
 		Username    string `json:"username"`
@@ -28,7 +30,7 @@ type BotData struct {
 	ApiInfo struct {
 		BackendUrl  string `json:"backendUrl"`
 		AccessToken string `json:"accessToken"`
-	}
+	} `json:"apiInfo"`
 }
 
 type Bot string
@@ -41,7 +43,7 @@ const (
 	Verified        = "VERIFIED"
 )
 
-const serverIP = "play.hypixel.net" //current hypixel IP
+const serverIP = "mc.hypixel.net" //current hypixel IP
 
 var fragBot *FragBot
 
@@ -57,19 +59,18 @@ func StartClient(data BotData) error {
 
 	for {
 		err := joinHypixel(c, data)
-		if strings.Contains(err.Error(), "kicked") {
-			// TODO bot kicked embed
+		if strings.Contains(err.Error(), "kicked") || strings.Contains(err.Error(), "EOF") {
+			sendEmbed(data, "FragBot kicked from hypixel! Reconnecting...")
 
 			fragBot.stop()
 			time.Sleep(5 * time.Second) //Give bot some time before attempting reconnect
 			continue
 		}
 		if strings.Contains(err.Error(), "banned") {
-			// TODO bot banned embed
+			sendEmbed(data, "FragBot BANNED from hypixel!")
 		}
 		return err
 	}
-
 }
 
 // joinHypixel joins the server
@@ -77,7 +78,8 @@ func StartClient(data BotData) error {
 func joinHypixel(c *bot.Client, data BotData) error {
 	fragBot = newFragBot(c, data)
 
-	basic.NewPlayer(c, basic.DefaultSettings, basic.EventsListener{SystemMsg: fragBot.onChat, Disconnect: fragBot.onDc, GameStart: fragBot.onStart}) //Registers all of fragbots hooks
+	player := basic.NewPlayer(c, basic.DefaultSettings, basic.EventsListener{SystemMsg: fragBot.onChat, Disconnect: fragBot.onDc, GameStart: fragBot.onStart}) //Registers all of fragbots hooks
+	msg.New(c, player, msg.EventsHandler{})
 
 	logging.Log("Joining Hypixel")
 	err := c.JoinServer(serverIP)

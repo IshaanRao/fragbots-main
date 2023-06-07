@@ -41,10 +41,6 @@ func (cq *CmdQueue) start() {
 	}()
 }
 
-func (cq *CmdQueue) clear() {
-
-}
-
 func (cq *CmdQueue) stop() {
 	cq.quit <- true
 	close(cq.queueChannel)

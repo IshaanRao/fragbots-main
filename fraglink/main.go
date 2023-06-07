@@ -5,8 +5,6 @@ import (
 	"os"
 )
 
-var addr = "localhost:2468"
-
 var BackendUrl string
 var AccessToken string
 var HypixelApiKey string
@@ -14,7 +12,10 @@ var BotId string
 
 func main() {
 	loadEnv()
-	start()
+	err := startApi()
+	if err != nil {
+		LogFatal("Client Stopped:", err)
+	}
 }
 
 // loadEnv loads all environment variables

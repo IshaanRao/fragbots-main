@@ -8,6 +8,8 @@ RUN go mod download
 COPY . ./
 RUN ls
 
-RUN go build -o /fragbots
+RUN go build -o /fraglink
 
-CMD ["/fragbots"]
+EXPOSE 2468
+
+CMD ["/fraglink"]

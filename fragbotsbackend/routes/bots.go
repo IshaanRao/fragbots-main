@@ -303,6 +303,9 @@ func PutBot(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
 }
 
+// PostBot has two stages to create a fragbot
+// stage 1 uses credentials give user a link that allows them to auth mc acct
+// stage two
 func PostBot(c *gin.Context) {
 	botId := c.Param("botid")
 	var request PostBotRequest
