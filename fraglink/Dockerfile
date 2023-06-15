@@ -10,6 +10,4 @@ RUN ls
 
 RUN go build -o /fraglink
 
-EXPOSE 2468
-
 CMD ["/fraglink"]

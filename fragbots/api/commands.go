@@ -21,7 +21,7 @@ var commands = map[string]func(data interface{}) error{
 
 // handleCommand takes command name and calls the command handler
 func handleCommand(command WsCommand) error {
-	logging.Log("Processing command with name:" + command.Name)
+	logging.Log("Processing command with name:", command.Name)
 	f, ok := commands[command.Name]
 	if !ok {
 		sendCommand(WsCommand{Name: "Error", Data: "Invalid Command"})

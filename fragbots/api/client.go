@@ -5,8 +5,6 @@ import (
 	"github.com/Prince/fragbots/logging"
 	"github.com/gorilla/websocket"
 	"net/url"
-	"os"
-	"os/signal"
 )
 
 var conn *websocket.Conn
@@ -17,9 +15,6 @@ var addr = "fraglink:2468"
 // StartClient starts wsClient that connects to FragLink ws server
 func StartClient() error {
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/ws"}
 	logging.Log("Connecting to fragbot ws at: " + u.String())
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -28,6 +23,7 @@ func StartClient() error {
 		return err
 	}
 	conn = c
+	logging.InitializeLogger(c)
 
 	defer func() {
 		err := c.Close()

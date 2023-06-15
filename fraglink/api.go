@@ -2,8 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/websocket"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 const addr = ":2468"
@@ -16,13 +21,28 @@ var upgrader = websocket.Upgrader{}
 var wsClient *websocket.Conn
 
 // startApi starts the server that the websocket runs on
-// blocks until error
+// blocks until error or program is stopped
 func startApi() error {
 	http.HandleFunc("/ws", wsHandler)
 	Log("Starting server at:", addr)
-	return srv.ListenAndServe()
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+			log.Printf("listen: %s\n", err)
+		}
+	}()
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	LogWarn("Shutting down server...")
+	if wsClient != nil {
+		err := wsClient.Close()
+		LogWarn("Error while closing ws client:", err)
+	}
+	return srv.Close()
 }
 
+// wsHandler upgrades connection to ws connection and
+// manages the fragbots commands
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 
@@ -43,11 +63,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	wsClient = c
 
 	//tell bot to start
-	err = sendStartBotCommand()
+	data, err := sendStartBotCommand()
 	if err != nil {
 		LogWarn("Failed to send start bot cmd closing connection:", err)
 		return
 	}
+
+	go startWebhookLogger(data.BotInfo.DiscInfo.ConsoleWebhook)
 
 	for {
 		_, message, err := c.ReadMessage()

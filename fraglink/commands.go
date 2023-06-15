@@ -55,11 +55,13 @@ type WsCommand struct {
 
 var commands = map[string]func(data interface{}) error{
 	"Error": handleError,
+	"Log":   handleLog,
 }
 
 var ReqClient = req.C().
 	SetTimeout(20 * time.Second)
 
+// sendCommand sends a command to connected fragbot client
 func sendCommand(command WsCommand) {
 	marshal, _ := json.Marshal(command)
 	err := wsClient.WriteMessage(websocket.TextMessage, marshal)
@@ -69,6 +71,7 @@ func sendCommand(command WsCommand) {
 	return
 }
 
+// handleCommand takes command data and sends it to correct handler
 func handleCommand(command WsCommand) error {
 	Log("Processing command with name: " + command.Name)
 	f, ok := commands[command.Name]
@@ -86,11 +89,11 @@ func handleError(data interface{}) error {
 }
 
 // sendStartBotCommand sends the command that starts the fragbot
-func sendStartBotCommand() error {
+func sendStartBotCommand() (*GetFragbotResp, error) {
 	Log("Successfully connected to server, sending start bot command")
 	FragData, err := getFragData(BotId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var resp = FragInitData{
@@ -107,9 +110,10 @@ func sendStartBotCommand() error {
 	dataString, _ := json.MarshalIndent(resp, "", "  ")
 	Log(string(dataString))
 	sendCommand(WsCommand{Name: "StartBot", Data: resp})
-	return nil
+	return FragData, nil
 }
 
+// getFragData retrieves bot information from the backend
 func getFragData(botId string) (*GetFragbotResp, error) {
 	var FragData GetFragbotResp
 
@@ -122,4 +126,11 @@ func getFragData(botId string) (*GetFragbotResp, error) {
 		return nil, err
 	}
 	return &FragData, nil
+}
+
+// handleLog recieves log commands and adds them to webhook queue
+func handleLog(data interface{}) error {
+	logMsg := fmt.Sprint(data)
+	webhookLogQueue = append(webhookLogQueue, logMsg)
+	return nil
 }
