@@ -3,9 +3,11 @@ package client
 import (
 	"encoding/json"
 	"errors"
+	"github.com/Prince/fragbots/logging"
 	"github.com/google/uuid"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -13,6 +15,11 @@ import (
 type MojangResponse struct {
 	Name string `json:"name"`
 	UUID string `json:"id"`
+}
+
+// GetFragbotResp is fragbots response containing all data for the fragbot
+type GetFragbotResp struct {
+	BotInfo BotData `json:"botInfo"`
 }
 
 // FragBotsUser is the data type for all fb user data
@@ -36,7 +43,7 @@ type Requester struct {
 // httpClient is a client for making all requests
 var httpClient = http.Client{}
 
-func newRequester(backendUrl string, accessToken string) *Requester {
+func NewRequester(backendUrl string, accessToken string) *Requester {
 	r := &Requester{
 		backendUrl:  backendUrl,
 		accessToken: accessToken,
@@ -54,7 +61,7 @@ func get(url string, headers *http.Header) (*http.Response, error) {
 	if headers != nil {
 		for key, vals := range *headers {
 			for _, val := range vals {
-				headers.Add(key, val)
+				req.Header.Add(key, val)
 			}
 
 		}
@@ -148,4 +155,32 @@ func getMojangData(username string) (*MojangResponse, error) {
 		return nil, err
 	}
 	return mojData, nil
+}
+
+// GetFragData retrieves bot information from the backend
+func (r *Requester) GetFragData(botId string) (*GetFragbotResp, error) {
+	FragData := &GetFragbotResp{}
+
+	res, err := get(r.backendUrl+"/bots/"+botId, &http.Header{
+		"access-token": {r.accessToken},
+	})
+	if err != nil || res.StatusCode != 200 {
+		if err == nil {
+			return nil, errors.New("failed to get fragbot data status code: " + strconv.Itoa(res.StatusCode))
+		}
+		logging.LogWarn("Failed to get FragBotData error:", err.Error())
+		return nil, err
+	}
+
+	defer res.Body.Close()
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, FragData)
+	if err != nil {
+		return nil, err
+	}
+
+	return FragData, nil
 }

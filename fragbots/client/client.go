@@ -19,7 +19,6 @@ import (
 type BotData struct {
 	BotId       string `json:"botId"`
 	BotType     Bot    `json:"botType"`
-	WebhookUrl  string `json:"webhookUrl"`
 	AccountInfo struct {
 		Uuid        string `json:"uuid"`
 		Username    string `json:"username"`
@@ -27,10 +26,11 @@ type BotData struct {
 		Password    string `json:"password"`
 		AccessToken string `json:"accessToken"`
 	} `json:"accountInfo"`
-	ApiInfo struct {
-		BackendUrl  string `json:"backendUrl"`
-		AccessToken string `json:"accessToken"`
-	} `json:"apiInfo"`
+	DiscInfo struct {
+		LogWebhook     string `json:"logwebhook"`
+		ConsoleWebhook string `json:"consolewebhook"`
+	} `json:"discordInfo"`
+	Requester *Requester
 }
 
 type Bot string
@@ -60,14 +60,14 @@ func StartClient(data BotData) error {
 	for {
 		err := joinHypixel(c, data)
 		if strings.Contains(err.Error(), "kicked") || strings.Contains(err.Error(), "EOF") {
-			sendEmbed(data, "FragBot kicked from hypixel! Reconnecting...")
+			logging.SendEmbed(data.DiscInfo.LogWebhook, data.AccountInfo.Username, "FragBot kicked from hypixel! Reconnecting...")
 
 			fragBot.stop()
 			time.Sleep(5 * time.Second) //Give bot some time before attempting reconnect
 			continue
 		}
 		if strings.Contains(err.Error(), "banned") {
-			sendEmbed(data, "FragBot BANNED from hypixel!")
+			logging.SendEmbed(data.DiscInfo.LogWebhook, data.AccountInfo.Username, "FragBot BANNED from hypixel!")
 		}
 		return err
 	}

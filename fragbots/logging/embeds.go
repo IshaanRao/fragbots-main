@@ -1,10 +1,9 @@
-package client
+package logging
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/Prince/fragbots/logging"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -63,12 +62,12 @@ func SendMessage(url string, message Message) error {
 	return nil
 }
 
-// sendEmbed is an easier way to send an embed
-func sendEmbed(data BotData, description string) {
-	err := SendMessage(data.WebhookUrl, Message{
+// SendEmbed is an easier way to send an embed
+func SendEmbed(webhook string, username string, description string) {
+	err := SendMessage(webhook, Message{
 		Embeds: []Embed{
 			{
-				Title:       data.AccountInfo.Username + " Logs",
+				Title:       username + " Logs",
 				Description: description,
 				Color:       DefaultEmbedColor,
 				Footer: Footer{
@@ -81,16 +80,16 @@ func sendEmbed(data BotData, description string) {
 	})
 
 	if err != nil {
-		logging.LogWarn("Error sending embed:", err)
+		LogWarn("Error sending embed:", err)
 	}
 }
 
-// sendEmbedThumbnail is an easier way to send an embed w/ a thumbnail
-func sendEmbedThumbnail(data BotData, description string, thumbnailUrl string) {
-	err := SendMessage(data.WebhookUrl, Message{
+// SendEmbedThumbnail is an easier way to send an embed w/ a thumbnail
+func SendEmbedThumbnail(webhook string, username string, description string, thumbnailUrl string) {
+	err := SendMessage(webhook, Message{
 		Embeds: []Embed{
 			{
-				Title:       data.AccountInfo.Username + " Logs",
+				Title:       username + " Logs",
 				Description: description,
 				Color:       DefaultEmbedColor,
 				Footer: Footer{
@@ -104,6 +103,6 @@ func sendEmbedThumbnail(data BotData, description string, thumbnailUrl string) {
 	})
 
 	if err != nil {
-		logging.LogWarn("Error sending embed:", err)
+		LogWarn("Error sending embed:", err)
 	}
 }

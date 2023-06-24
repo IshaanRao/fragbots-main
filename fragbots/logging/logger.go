@@ -1,11 +1,12 @@
 package logging
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"os"
+	"strings"
+	"time"
 )
 
 // Color coded to make logs easier to read
@@ -14,43 +15,63 @@ var colorRed = "\033[31m"
 var colorGreen = "\033[32m"
 var colorYellow = "\033[33m"
 
+var webhookLogQueue []string
 var conn *websocket.Conn
 
-// InitializeLogger gives logger the connection, so it can send messages to FragLink
-func InitializeLogger(c *websocket.Conn) {
-	conn = c
+// InitializeConsole gives logger the connection, so it can send messages to FragLink
+func InitializeConsole(consoleUrl string, botId string) {
+	startWebhookLogger(consoleUrl, botId)
 }
 
 func LogWarn(v ...any) {
 	log.Println(colorYellow+"[WARN]", fmt.Sprintln(v...), colorReset)
-	SendLogCommand("[WARN] " + fmt.Sprint(v...))
+	queueLog("[WARN] " + fmt.Sprint(v...))
 }
 
 func Log(v ...any) {
 	log.Println(colorGreen+"[INFO]", fmt.Sprintln(v...), colorReset)
-	SendLogCommand("[INFO] " + fmt.Sprint(v...))
+	queueLog("[INFO] " + fmt.Sprint(v...))
 }
 
 func LogFatal(v ...any) {
 	log.Println(colorRed+"[FATAL]", fmt.Sprintln(v...), colorReset)
-	SendLogCommand("[FATAL] " + fmt.Sprint(v...))
+	queueLog("[FATAL] " + fmt.Sprint(v...))
 	os.Exit(1)
 }
 
-// SendLogCommand sends a log message to fraglink
-// doesnt use api package to avoid cyclic dependency
-func SendLogCommand(logMsg string) {
-	if conn == nil {
-		return
-	}
-	command := map[string]interface{}{
-		"Name": "Log",
-		"Data": logMsg,
-	}
-	marshal, _ := json.Marshal(command)
-	err := conn.WriteMessage(websocket.TextMessage, marshal)
-	if err != nil {
-		log.Println("Failed to send log", err)
-	}
+// queueLog appends logging message to webhookLogQueue to be sent to console channel
+func queueLog(logMsg string) {
+	webhookLogQueue = append(webhookLogQueue, logMsg)
 	return
+}
+
+// startWebhookLogger made to not hit 30 msg/minute limit for webhooks
+// makes 24 reqs per min (60/2.5) to have wiggle room
+func startWebhookLogger(webhookUrl string, botId string) {
+	for {
+		if len(webhookLogQueue) == 0 {
+			continue
+		}
+		messages := webhookLogQueue
+		webhookLogQueue = nil
+		message := "```scss\n" + strings.Join(messages[:], "\n") + "\n```"
+		err := SendMessage(webhookUrl, Message{
+			Embeds: []Embed{
+				{
+					Title:       botId + " Console",
+					Description: message,
+					Color:       DefaultEmbedColor,
+					Footer: Footer{
+						Text:    "FragBots V3",
+						IconUrl: FooterIcon,
+					},
+					Timestamp: time.Now(),
+				},
+			},
+		})
+		if err != nil {
+			LogWarn("Error sending message to console:", err)
+		}
+		time.Sleep(2500 * time.Millisecond)
+	}
 }
