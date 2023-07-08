@@ -1,4 +1,4 @@
-package fragaws
+package servers
 
 import (
 	"bufio"
@@ -43,7 +43,11 @@ func MakeFragBotServer(botId string) (string, error) {
 		logging.LogWarn("Failed to get userdata file error: " + err.Error())
 		return "", err
 	}
-	userData += "\ndocker run -d --net fragnet --name fragbot --restart always -e ACCESS_TOKEN=" + constants.AccessToken + " -e AUTHKEY=" + constants.AuthKey + " -e BACKEND_URI=" + constants.BackendUrl + " -e HYPIXEL_API_KEY=" + constants.HypixelApiKey + " -e BOT_ID=" + botId + " ishaanrao/fragbots:latest"
+	userData += "\n" +
+		"hostnamectl set-hostname " + botId +
+		"\nsudo systemctl restart docker\n" +
+		GetJoinCommand() + "\n" +
+		"curl --request PUT '" + constants.BackendUrl + " + /bots/" + botId + "' --header 'access-token: " + constants.AccessToken + "'"
 
 	userDataEncoded := base64.StdEncoding.EncodeToString([]byte(userData))
 	input := &ec2.RunInstancesInput{

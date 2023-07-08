@@ -7,6 +7,7 @@ import (
 	"fragbotsbackend/database"
 	"fragbotsbackend/logging"
 	"fragbotsbackend/routes"
+	"fragbotsbackend/servers"
 	gin "github.com/gin-gonic/gin"
 	"github.com/imroc/req/v3"
 	"log"
@@ -29,6 +30,7 @@ func init() {
 func main() {
 	constants.LoadConsts()
 	database.StartClient()
+	servers.StartServerManagement()
 	routes.Router = Router
 	routes.InitRoutes()
 
