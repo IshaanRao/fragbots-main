@@ -20,7 +20,7 @@ var conn *websocket.Conn
 
 // InitializeConsole gives logger the connection, so it can send messages to FragLink
 func InitializeConsole(consoleUrl string, botId string) {
-	startWebhookLogger(consoleUrl, botId)
+	go startWebhookLogger(consoleUrl, botId)
 }
 
 func LogWarn(v ...any) {
