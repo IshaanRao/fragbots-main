@@ -47,7 +47,7 @@ func MakeFragBotServer(botId string) (string, error) {
 		"hostnamectl set-hostname " + botId +
 		"\nsudo systemctl restart docker\n" +
 		GetJoinCommand() + "\n" +
-		"curl --request PUT '" + constants.BackendUrl + "/bots/" + botId + "' --header 'access-token: " + constants.AccessToken + "'"
+		"curl --request POST '" + constants.BackendUrl + "/bots/" + botId + "/start ' --header 'access-token: " + constants.AccessToken + "'"
 
 	userDataEncoded := base64.StdEncoding.EncodeToString([]byte(userData))
 	input := &ec2.RunInstancesInput{

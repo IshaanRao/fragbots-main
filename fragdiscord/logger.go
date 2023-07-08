@@ -13,15 +13,15 @@ var colorCyan = "\033[36m"
 
 func Debug(message string) {
 	if DebugMode {
-		println(colorCyan + "[" + Name + "-DEBUG] " + message + colorReset)
+		log.Println(colorCyan + "[" + Name + "-DEBUG] " + message + colorReset)
 	}
 }
 
 func LogWarn(message string) {
-	println(colorYellow + "[" + Name + "-WARN] " + message + colorReset)
+	log.Println(colorYellow + "[" + Name + "-WARN] " + message + colorReset)
 }
 func Log(message string) {
-	println(colorGreen + "[" + Name + "] " + message + colorReset)
+	log.Println(colorGreen + "[" + Name + "] " + message + colorReset)
 }
 
 func LogFatal(message string) {

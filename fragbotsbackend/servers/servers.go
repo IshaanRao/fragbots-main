@@ -35,6 +35,13 @@ func GetJoinCommand() string {
 	return cmd
 }
 
+func StopFragbotService(botId string) error {
+	err := dockerClient.ServiceRemove(ctx, botId)
+	if err != nil {
+		logging.LogWarn("Failed to stop fragbots service: " + err.Error())
+	}
+	return err
+}
 func RunFragbotsService(botId string) error {
 	_, err := dockerClient.ServiceCreate(ctx, swarm.ServiceSpec{
 		Annotations: swarm.Annotations{

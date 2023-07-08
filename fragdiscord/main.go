@@ -36,7 +36,7 @@ func main() {
 		LogFatal("Something went wrong in prelogin: " + err.Error())
 	}
 
-	// Anything after this function will only run if there's an error if the proccess ends
+	// Anything after this function will only run if there's an error the proccess ends
 	err = startBot()
 	if err != nil {
 		Log("Error has occurred while starting or shutting down bot: " + err.Error())
@@ -74,6 +74,10 @@ func addHandlers() error {
 func addLoginHandler() {
 	client.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		Log("Bot Logged in to account: " + r.User.Username + ", with userId: " + r.User.ID)
+		err := postStart()
+		if err != nil {
+			LogFatal("Post Start failed: " + err.Error())
+		}
 	})
 }
 
@@ -88,11 +92,6 @@ func startBot() error {
 		return err
 	}
 	Log("Bot Started")
-
-	err = postStart()
-	if err != nil {
-		return err
-	}
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)

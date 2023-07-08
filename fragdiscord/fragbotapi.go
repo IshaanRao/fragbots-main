@@ -22,8 +22,8 @@ type PostBotRequest struct {
 	UserCode string `json:"userCode,omitempty" form:"userCode"`
 }
 
-type DeleteBotRequest struct {
-	Delete bool `json:"delete" form:"delete"`
+type StopBotRequest struct {
+	HardStop bool `json:"hardStop" form:"hardStop"`
 }
 
 func CreateBot2(botId string, request PostBotRequest) *ErrorResponse {
@@ -64,8 +64,8 @@ func StartBot(botId string) *ErrorResponse {
 	errRes := ErrorResponse{}
 	_, err := ReqClient.R().
 		SetHeader("access-token", AccessToken).
-		SetError(&errRes).
-		Put(BackendUrl + "/bots/" + botId)
+		SetErrorResult(&errRes).
+		Post(BackendUrl + "/bots/" + botId + "/start")
 	if err != nil {
 		return &ErrorResponse{"Request timed out!"}
 	}
@@ -75,12 +75,13 @@ func StartBot(botId string) *ErrorResponse {
 	return nil
 }
 
-func StopBot(botId string) *ErrorResponse {
+func StopBot(botId string, hardStop bool) *ErrorResponse {
 	errRes := ErrorResponse{}
 	_, err := ReqClient.R().
 		SetHeader("access-token", AccessToken).
-		SetError(&errRes).
-		Delete(BackendUrl + "/bots/" + botId)
+		SetBody(StopBotRequest{HardStop: hardStop}).
+		SetErrorResult(&errRes).
+		Post(BackendUrl + "/bots/" + botId + "/stop")
 	if err != nil {
 		return &ErrorResponse{"Request timed out!"}
 	}
@@ -94,9 +95,8 @@ func DeleteBot(botId string) *ErrorResponse {
 	errRes := ErrorResponse{}
 	_, err := ReqClient.R().
 		SetHeader("access-token", AccessToken).
-		SetBody(DeleteBotRequest{Delete: true}).
-		SetError(&errRes).
-		Delete(BackendUrl + "/bots/" + botId)
+		SetErrorResult(&errRes).
+		Post(BackendUrl + "/bots/" + botId + "/delete")
 	if err != nil {
 		return &ErrorResponse{"Request timed out!"}
 	}
