@@ -35,6 +35,13 @@ func GetJoinCommand() string {
 	return cmd
 }
 
+func RemoveFragbotNode(botId string) {
+	err := dockerClient.NodeRemove(ctx, strings.ToLower(botId), types.NodeRemoveOptions{Force: true})
+	if err != nil {
+		logging.LogWarn("Failed to remove docker node: " + err.Error())
+	}
+}
+
 func StopFragbotService(botId string) error {
 	err := dockerClient.ServiceRemove(ctx, botId)
 	if err != nil {

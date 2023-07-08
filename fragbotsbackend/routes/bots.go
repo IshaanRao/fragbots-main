@@ -216,6 +216,7 @@ func StopBot(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Failed to delete instance"})
 			return
 		}
+		servers.RemoveFragbotNode(botId)
 		err = database.UpdateDocumentDelField("accounts", bson.D{{"botId", botId}}, bson.D{{"serverId", nil}})
 		if err != nil {
 			logging.LogWarn("Failed to remove server id: " + err.Error())
@@ -251,6 +252,7 @@ func DeleteBot(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Failed to delete instance"})
 			return
 		}
+		servers.RemoveFragbotNode(botId)
 		err = database.UpdateDocumentDelField("accounts", bson.D{{"botId", botId}}, bson.D{{"serverId", nil}})
 		if err != nil {
 			logging.LogWarn("Failed to remove server id: " + err.Error())
