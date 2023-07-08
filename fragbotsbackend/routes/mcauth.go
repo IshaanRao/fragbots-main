@@ -8,18 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"fragbotsbackend/constants"
 	"net/http"
 	"net/url"
 	"os"
 	"time"
 )
-
-// MSauth holds Microsoft auth credentials
-type MSauth struct {
-	AccessToken  string `json:"accessToken" bson:"accessToken"`
-	ExpiresAfter int64  `json:"expiresAfter" bson:"expiresAfter"`
-	RefreshToken string `json:"refreshToken" bson:"refreshToken"`
-}
 
 type AuthUserData struct {
 	UserCode        string `json:"userCode"`
@@ -32,7 +26,7 @@ type AuthUserData struct {
 const AzureClientIDEnvVar = "AzureClientID"
 
 // CheckRefreshMS Checks MSauth for expired token and refreshes if needed
-func CheckRefreshMS(auth *MSauth) error {
+func CheckRefreshMS(auth *constants.MSauth) error {
 	cid := "88650e7e-efee-4857-b9a9-cf580a00ef43"
 
 	if auth.ExpiresAfter <= time.Now().Unix() {
@@ -76,7 +70,7 @@ func CheckRefreshMS(auth *MSauth) error {
 }
 
 // AuthMSdevice Attempts to authorize user via device flow. Will block thread until gets error, timeout or actual authorization
-func AuthMSdevice() (*AuthUserData, chan *MSauth, error) {
+func AuthMSdevice() (*AuthUserData, chan *constants.MSauth, error) {
 	cid := "88650e7e-efee-4857-b9a9-cf580a00ef43"
 
 	DeviceResp, err := http.PostForm("https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode", url.Values{
@@ -113,7 +107,7 @@ func AuthMSdevice() (*AuthUserData, chan *MSauth, error) {
 		return nil, nil, errors.New("Pooling interval not found in response")
 	}
 
-	msDataChan := make(chan *MSauth)
+	msDataChan := make(chan *constants.MSauth)
 
 	go func() {
 		time.Sleep(4 * time.Second)
@@ -154,7 +148,7 @@ func AuthMSdevice() (*AuthUserData, chan *MSauth, error) {
 					return
 				}
 			} else if CodeResp.StatusCode == 200 {
-				auth := MSauth{}
+				auth := constants.MSauth{}
 				MSaccessToken, ok := CodeRes["access_token"].(string)
 				if !ok {
 					msDataChan <- nil
@@ -354,8 +348,8 @@ func AuthMC(token XSTSauth) (MCauth, error) {
 }
 
 // GetMCprofile Gets bot.Auth from token
-func GetMCprofile(token string) (*AccountInfo, error) {
-	var profile AccountInfo
+func GetMCprofile(token string) (*constants.AccountInfo, error) {
+	var profile constants.AccountInfo
 	PRreq, err := http.NewRequest("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
 	if err != nil {
 		return nil, err
@@ -388,7 +382,7 @@ func GetMCprofile(token string) (*AccountInfo, error) {
 }
 
 // GetMCcredentials From 0 to Minecraft bot.Auth with cache using device code flow
-func GetMCcredentials(MSa MSauth) (*AccountInfo, error) {
+func GetMCcredentials(MSa constants.MSauth) (*constants.AccountInfo, error) {
 	XBLa, err := AuthXBL(MSa.AccessToken)
 	if err != nil {
 		return nil, err

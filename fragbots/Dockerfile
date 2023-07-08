@@ -2,14 +2,12 @@ FROM golang:alpine
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
+COPY go.* ./
 RUN go mod download
 
-COPY *.go ./
+COPY . ./
+RUN ls
 
 RUN go build -o /fragbots
-
-EXPOSE 2468
 
 CMD ["/fragbots"]
