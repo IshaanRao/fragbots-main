@@ -49,7 +49,6 @@ var fragBot *FragBot
 
 // StartClient uses credentials to set up and start the fragbot
 func StartClient(data BotData) error {
-	logging.InitializeConsole(data.DiscInfo.ConsoleWebhook, data.BotId)
 
 	c := bot.NewClient()
 
