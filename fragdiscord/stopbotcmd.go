@@ -41,6 +41,12 @@ var StopBotCommand = &Command{
 				},
 				Required: true,
 			},
+			{
+				Type:        discordgo.ApplicationCommandOptionBoolean,
+				Name:        "hard_stop",
+				Description: "Hard Stop deletes server instead of just stopping bot",
+				Required:    true,
+			},
 		},
 	},
 	Handler:  stopBotRun,
@@ -49,8 +55,10 @@ var StopBotCommand = &Command{
 
 func stopBotRun(client *discordgo.Session, event *discordgo.InteractionCreate) {
 	id := event.ApplicationCommandData().Options[0].StringValue()
-	err := StopBot(id)
+	hardStop := event.ApplicationCommandData().Options[1].BoolValue()
+	err := StopBot(id, hardStop)
 	if err != nil {
+		LogWarn("aaaa")
 		NewMessageBuilder().addEmbed(NewEmbedBuilder().setTitle("Error Occured").setDesc(err.Err)).sendAsInteractionResponseMessage(client, event)
 		return
 	}
