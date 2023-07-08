@@ -15,7 +15,7 @@ var colorRed = "\033[31m"
 var colorGreen = "\033[32m"
 var colorYellow = "\033[33m"
 
-var webhookLogQueue []string
+var webhookLogQueue = make([]string, 0)
 var conn *websocket.Conn
 
 // InitializeConsole gives logger the connection, so it can send messages to FragLink

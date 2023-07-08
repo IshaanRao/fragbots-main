@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 	"go.mongodb.org/mongo-driver/bson"
+	"strings"
 )
 
 var dockerClient *client.Client
@@ -50,7 +51,7 @@ func RunFragbotsService(botId string) error {
 			},
 			Placement: &swarm.Placement{
 				Constraints: []string{
-					"node.hostname==" + botId,
+					"node.hostname==" + strings.ToLower(botId),
 				},
 			},
 		},
