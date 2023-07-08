@@ -44,8 +44,8 @@ func RunFragbotsService(botId string) error {
 				Image: "ishaanrao/fragbots:latest",
 				Env: []string{
 					"BOT_ID=" + botId,
-					"ACCESS_TOKEN" + constants.AccessToken,
-					"BACKEND_URI" + constants.BackendUrl,
+					"ACCESS_TOKEN=" + constants.AccessToken,
+					"BACKEND_URI=" + constants.BackendUrl,
 				},
 			},
 			Placement: &swarm.Placement{

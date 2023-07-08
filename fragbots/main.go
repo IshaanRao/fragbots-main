@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		logging.LogFatal("Failed to get fragbot data:", err)
 	}
-
+	logging.Log("Retrieved fragbot data")
 	data.BotInfo.Requester = requester
 
 	err = client.StartClient(data.BotInfo)
