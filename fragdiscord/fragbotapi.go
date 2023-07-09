@@ -105,3 +105,18 @@ func DeleteBot(botId string) *ErrorResponse {
 	}
 	return nil
 }
+
+func RestartBot(botId string) *ErrorResponse {
+	errRes := ErrorResponse{}
+	_, err := ReqClient.R().
+		SetHeader("access-token", AccessToken).
+		SetErrorResult(&errRes).
+		Post(BackendUrl + "/bots/" + botId + "/restart")
+	if err != nil {
+		return &ErrorResponse{"Request timed out!"}
+	}
+	if errRes.Err != "" {
+		return &errRes
+	}
+	return nil
+}
