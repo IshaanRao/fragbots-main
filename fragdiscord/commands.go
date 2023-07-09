@@ -39,6 +39,7 @@ func registerCommands() {
 	registerCommand(StartBotCommand)
 	registerCommand(StopBotCommand)
 	registerCommand(DeleteBotCommand)
+	registerCommand(RestartBotCommand)
 	Debug("Registered all commands successfully!")
 }
 

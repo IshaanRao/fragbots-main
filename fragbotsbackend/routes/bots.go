@@ -186,6 +186,33 @@ func GetBot(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"botInfo": botInfo})
 }
 
+func RestartBot(c *gin.Context) {
+	botId := c.Param("botid")
+
+	botInfo, err := getBotInfoFromDb(botId)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid BotID"})
+		return
+	}
+
+	if botInfo.ServerId == "" {
+		c.IndentedJSON(http.StatusConflict, gin.H{"error": "bot server needs to be started (use startbot)"})
+		return
+	}
+
+	if botInfo.Running {
+		_ = servers.StopFragbotService(botId)
+	}
+
+	err = servers.RunFragbotsService(botId)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "failed to start fragbot: " + err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"success": true})
+
+}
+
 // StopBot stops fragbot service and removes the aws server if specified in request
 func StopBot(c *gin.Context) {
 	botId := c.Param("botid")
@@ -216,6 +243,7 @@ func StopBot(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Failed to delete instance"})
 			return
 		}
+		servers.RemoveFragbotNode(botId)
 		err = database.UpdateDocumentDelField("accounts", bson.D{{"botId", botId}}, bson.D{{"serverId", nil}})
 		if err != nil {
 			logging.LogWarn("Failed to remove server id: " + err.Error())
@@ -251,6 +279,7 @@ func DeleteBot(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Failed to delete instance"})
 			return
 		}
+		servers.RemoveFragbotNode(botId)
 		err = database.UpdateDocumentDelField("accounts", bson.D{{"botId", botId}}, bson.D{{"serverId", nil}})
 		if err != nil {
 			logging.LogWarn("Failed to remove server id: " + err.Error())

@@ -16,6 +16,7 @@ func InitRoutes() {
 	botInfo.POST("/:botid", CreateBot)
 	botInfo.POST("/:botid/start", StartBot)
 	botInfo.POST("/:botid/stop", StopBot)
+	botInfo.POST("/:botid/restart", RestartBot)
 	botInfo.POST("/:botid/delete", DeleteBot)
 	Router.GET("/users/:uuid", GetUser)
 	Router.GET("/uses", GetUses)
