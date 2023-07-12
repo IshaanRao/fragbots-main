@@ -8,6 +8,7 @@ import (
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/bot/basic"
 	"github.com/Tnze/go-mc/bot/msg"
+	"github.com/Tnze/go-mc/bot/world"
 	"github.com/Tnze/go-mc/chat/sign"
 	"github.com/Tnze/go-mc/data/packetid"
 	pk "github.com/Tnze/go-mc/net/packet"
@@ -61,6 +62,7 @@ func StartClient(data BotData) error {
 	for {
 		err := joinHypixel(c, data)
 		if strings.Contains(err.Error(), "kicked") || strings.Contains(err.Error(), "EOF") {
+			logging.Log("Kicked:", err.Error())
 			logging.SendEmbed(data.DiscInfo.LogWebhook, data.AccountInfo.Username, "FragBot kicked from hypixel! Reconnecting...")
 
 			fragBot.stop()
@@ -79,8 +81,10 @@ func StartClient(data BotData) error {
 func joinHypixel(c *bot.Client, data BotData) error {
 	fragBot = newFragBot(c, data)
 
+	// Load all data needed for fragbot class
 	player := basic.NewPlayer(c, basic.DefaultSettings, basic.EventsListener{SystemMsg: fragBot.onChat, Disconnect: fragBot.onDc, GameStart: fragBot.onStart}) //Registers all of fragbots hooks
 	msg.New(c, player, msg.EventsHandler{})
+	fragBot.botWorld = world.NewWorld(c, player, world.EventsListener{})
 
 	logging.Log("Joining Hypixel")
 	err := c.JoinServer(serverIP)

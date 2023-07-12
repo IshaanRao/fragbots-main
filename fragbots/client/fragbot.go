@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Prince/fragbots/logging"
 	"github.com/Tnze/go-mc/bot"
+	"github.com/Tnze/go-mc/bot/world"
 	"github.com/Tnze/go-mc/chat"
 	"regexp"
 	"strconv"
@@ -25,6 +26,7 @@ const (
 
 type FragBot struct {
 	client    *bot.Client
+	botWorld  *world.World
 	Queue     *CmdQueue
 	waitTime  int
 	sentJoin  bool
