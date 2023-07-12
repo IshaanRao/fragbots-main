@@ -69,6 +69,14 @@ func RunFragbotsService(botId string) error {
 				},
 			},
 		},
+		EndpointSpec: &swarm.EndpointSpec{
+			Ports: []swarm.PortConfig{
+				{
+					TargetPort:    1234,
+					PublishedPort: 1234,
+				},
+			},
+		},
 	}, types.ServiceCreateOptions{})
 	if err != nil {
 		logging.LogWarn("Failed to run fragbots service")

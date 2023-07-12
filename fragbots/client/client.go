@@ -61,6 +61,8 @@ func StartClient(data BotData) error {
 	for {
 		err := joinHypixel(c, data)
 		if strings.Contains(err.Error(), "kicked") || strings.Contains(err.Error(), "EOF") {
+			logging.Log("Kicked:", err.Error())
+
 			logging.SendEmbed(data.DiscInfo.LogWebhook, data.AccountInfo.Username, "FragBot kicked from hypixel! Reconnecting...")
 
 			fragBot.stop()
