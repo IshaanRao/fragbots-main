@@ -44,7 +44,7 @@ const (
 	Verified        = "VERIFIED"
 )
 
-const serverIP = "mc.hypixel.net" //current hypixel IP
+const serverIP = "foxcraft.net" //current hypixel IP
 
 var fragBot *FragBot
 
@@ -82,9 +82,10 @@ func joinHypixel(c *bot.Client, data BotData) error {
 	fragBot = newFragBot(c, data)
 
 	// Load all data needed for fragbot class
-	player := basic.NewPlayer(c, basic.DefaultSettings, basic.EventsListener{SystemMsg: fragBot.onChat, Disconnect: fragBot.onDc, GameStart: fragBot.onStart}) //Registers all of fragbots hooks
-	msg.New(c, player, msg.EventsHandler{})
-	fragBot.botWorld = world.NewWorld(c, player, world.EventsListener{})
+	fragBot.player = basic.NewPlayer(c, basic.DefaultSettings, basic.EventsListener{SystemMsg: fragBot.onChat, Disconnect: fragBot.onDc, GameStart: fragBot.onStart}) //Registers all of fragbots hooks
+	msg.New(c, fragBot.player, msg.EventsHandler{})
+	fragBot.botWorld = world.NewWorld(c, fragBot.player, world.EventsListener{})
+	fragBot.movement = NewMovement(fragBot)
 
 	logging.Log("Joining Hypixel")
 	err := c.JoinServer(serverIP)
@@ -92,6 +93,21 @@ func joinHypixel(c *bot.Client, data BotData) error {
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		for {
+			time.Sleep(50 * time.Millisecond)
+			fragBot.movement.move()
+		}
+	}()
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		fragBot.movement.Sprinting = true
+		fragBot.movement.MovingForward = true
+		time.Sleep(3 * time.Second)
+		fragBot.movement.MovingForward = false
+	}()
 	logging.Log("Successfully joined Hypixel, starting main loop")
 	for {
 		if err = c.HandleGame(); err == nil {

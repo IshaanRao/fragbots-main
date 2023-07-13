@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Prince/fragbots/logging"
 	"github.com/Tnze/go-mc/bot"
+	"github.com/Tnze/go-mc/bot/basic"
 	"github.com/Tnze/go-mc/bot/world"
 	"github.com/Tnze/go-mc/chat"
 	"regexp"
@@ -32,6 +33,8 @@ type FragBot struct {
 	sentJoin  bool
 	requester *Requester
 	data      BotData
+	movement  *Movement
+	player    *basic.Player
 }
 
 // initBot sets up everything to run fragbot logic
