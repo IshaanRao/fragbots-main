@@ -72,7 +72,7 @@ func SendEmbed(webhook string, username string, description string) {
 				Description: description,
 				Color:       DefaultEmbedColor,
 				Footer: Footer{
-					Text:    "FragBots `" + Version + "`",
+					Text:    "FragBots V" + Version,
 					IconUrl: FooterIcon,
 				},
 				Timestamp: time.Now(),
@@ -94,7 +94,7 @@ func SendEmbedThumbnail(webhook string, username string, description string, thu
 				Description: description,
 				Color:       DefaultEmbedColor,
 				Footer: Footer{
-					Text:    "FragBots `" + Version + "`",
+					Text:    "FragBots V" + Version,
 					IconUrl: FooterIcon,
 				},
 				Timestamp: time.Now(),
