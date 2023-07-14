@@ -11,6 +11,7 @@ import (
 
 const FooterIcon = "https://cdn.discordapp.com/emojis/823999418592264232.webp?size=240&quality=lossless"
 const DefaultEmbedColor = 3388927
+const Version = "3.0.2"
 
 // https://github.com/bensch777/discord-webhook-golang/blob/v0.0.5/discordwebhook.go
 
@@ -71,7 +72,7 @@ func SendEmbed(webhook string, username string, description string) {
 				Description: description,
 				Color:       DefaultEmbedColor,
 				Footer: Footer{
-					Text:    "FragBots",
+					Text:    "FragBots `" + Version + "`",
 					IconUrl: FooterIcon,
 				},
 				Timestamp: time.Now(),
@@ -93,7 +94,7 @@ func SendEmbedThumbnail(webhook string, username string, description string, thu
 				Description: description,
 				Color:       DefaultEmbedColor,
 				Footer: Footer{
-					Text:    "FragBots",
+					Text:    "FragBots `" + Version + "`",
 					IconUrl: FooterIcon,
 				},
 				Timestamp: time.Now(),
