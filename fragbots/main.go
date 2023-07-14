@@ -25,9 +25,7 @@ func main() {
 		logging.LogFatal("Failed to get fragbot data:", err)
 	}
 
-	data.BotInfo.Requester = requester
-
-	err = client.StartClient(data.BotInfo)
+	err = client.StartClient(&data.BotInfo, backendUrl, accessToken)
 	if err != nil {
 		logging.LogFatal("Client stopped:", err)
 	}

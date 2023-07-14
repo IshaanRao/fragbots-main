@@ -30,7 +30,6 @@ type BotData struct {
 		LogWebhook     string `json:"logwebhook"`
 		ConsoleWebhook string `json:"consolewebhook"`
 	} `json:"discordInfo"`
-	Requester *Requester
 }
 
 type Bot string
@@ -48,7 +47,7 @@ const serverIP = "mc.hypixel.net" //current hypixel IP
 var fragBot *FragBot
 
 // StartClient uses credentials to set up and start the fragbot
-func StartClient(data BotData) error {
+func StartClient(data *BotData, backendUrl string, accessToken string) error {
 
 	c := bot.NewClient()
 
@@ -59,7 +58,7 @@ func StartClient(data BotData) error {
 	}
 
 	for {
-		err := joinHypixel(c, data)
+		err := joinHypixel(c, data, backendUrl, accessToken)
 		if strings.Contains(err.Error(), "kicked") || strings.Contains(err.Error(), "EOF") {
 			logging.Log("Kicked:", err.Error())
 
@@ -78,8 +77,8 @@ func StartClient(data BotData) error {
 
 // joinHypixel joins the server
 // blocks until client is disconnected
-func joinHypixel(c *bot.Client, data BotData) error {
-	fragBot = newFragBot(c, data)
+func joinHypixel(c *bot.Client, data *BotData, backendUrl string, accessToken string) error {
+	fragBot = newFragBot(c, data, backendUrl, accessToken)
 
 	player := basic.NewPlayer(c, basic.DefaultSettings, basic.EventsListener{SystemMsg: fragBot.onChat, Disconnect: fragBot.onDc, GameStart: fragBot.onStart}) //Registers all of fragbots hooks
 	msg.New(c, player, msg.EventsHandler{})

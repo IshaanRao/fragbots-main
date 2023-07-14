@@ -29,17 +29,20 @@ type FragBot struct {
 	waitTime  int
 	sentJoin  bool
 	requester *Requester
-	data      BotData
+	data      *BotData
 }
 
 // initBot sets up everything to run fragbot logic
-func newFragBot(c *bot.Client, data BotData) *FragBot {
+func newFragBot(c *bot.Client, data *BotData, backendUrl string, accessToken string) *FragBot {
 	fb := FragBot{
-		client:    c,
-		Queue:     newCmdQueue(),
-		sentJoin:  false,
-		requester: data.Requester,
-		data:      data,
+		client:   c,
+		Queue:    newCmdQueue(),
+		sentJoin: false,
+		requester: NewRequester(
+			backendUrl,
+			accessToken,
+		),
+		data: data,
 	}
 
 	switch data.BotType {
