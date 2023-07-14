@@ -125,6 +125,11 @@ func (fb *FragBot) onParty(ign string) {
 	logging.SendEmbedThumbnail(fb.data.DiscInfo.LogWebhook, fb.data.AccountInfo.Username, ign+" just partied "+fb.data.AccountInfo.Username+"!\nQueue Position: "+strconv.FormatInt(int64(queueLen), 10)+"\nEstimated Time: `"+strconv.FormatInt(int64(((queueLen-1)*(fb.waitTime+1))+1), 10)+" seconds"+"`", "https://mc-heads.net/avatar/"+ign)
 
 	logging.Log("Received party invite from: " + ign)
+	if fb == nil {
+		logging.Log("Fragbot became nil")
+	} else if fb.requester == nil {
+		logging.Log("Requester became nil")
+	}
 	if err := fb.requester.addUse(fragBotUser.Id); err != nil {
 		logging.LogWarn("AddUse failed for: "+ign+", err:", err)
 	}
