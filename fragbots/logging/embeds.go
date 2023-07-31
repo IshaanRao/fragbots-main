@@ -11,7 +11,7 @@ import (
 
 const FooterIcon = "https://cdn.discordapp.com/emojis/823999418592264232.webp?size=240&quality=lossless"
 const DefaultEmbedColor = 3388927
-const Version = "3.0.3"
+const Version = "3.1.0"
 
 // https://github.com/bensch777/discord-webhook-golang/blob/v0.0.5/discordwebhook.go
 

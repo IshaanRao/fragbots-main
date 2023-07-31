@@ -112,6 +112,7 @@ func (fb *FragBot) onParty(ign string) {
 	// Checks whether user is supposed to be able to party bot
 	if fragBotUser == nil || (botType == Priority && !fragBotUser.Priority) || fragBotUser.Discord == "unknown" || ((!fragBotUser.Priority && !fragBotUser.Exclusive) && ((botType == Exclusive) || (botType == Whitelisted && !fragBotUser.Whitelisted) || (botType == Active && !fragBotUser.Active))) {
 		logging.Log("(No Access) Rejected party invite from: " + ign)
+		return
 	}
 	queueLen := fb.Queue.GetTotalQueuedTasks()
 	if (queueLen >= 10 && (botType == Verified || botType == Whitelisted || botType == Active)) || (queueLen >= 5 && (botType == Exclusive || botType == Priority)) {
@@ -125,11 +126,6 @@ func (fb *FragBot) onParty(ign string) {
 	logging.SendEmbedThumbnail(fb.data.DiscInfo.LogWebhook, fb.data.AccountInfo.Username, ign+" just partied "+fb.data.AccountInfo.Username+"!\nQueue Position: "+strconv.FormatInt(int64(queueLen), 10)+"\nEstimated Time: `"+strconv.FormatInt(int64(((queueLen-1)*(fb.waitTime+1))+1), 10)+" seconds"+"`", "https://mc-heads.net/avatar/"+ign)
 
 	logging.Log("Received party invite from: " + ign)
-	if fb == nil {
-		logging.Log("Fragbot became nil")
-	} else if fb.requester == nil {
-		logging.Log("Requester became nil")
-	}
 	if err := fb.requester.addUse(fragBotUser.Id); err != nil {
 		logging.LogWarn("AddUse failed for: "+ign+", err:", err)
 	}
