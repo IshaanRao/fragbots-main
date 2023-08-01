@@ -25,7 +25,7 @@ const (
 
 type FragBot struct {
 	client    *bot.Client
-	Queue     *CmdQueue
+	queue     *CmdQueue
 	waitTime  int
 	sentJoin  bool
 	requester *Requester
@@ -34,9 +34,9 @@ type FragBot struct {
 
 // initBot sets up everything to run fragbot logic
 func newFragBot(c *bot.Client, data *BotData, backendUrl string, accessToken string) *FragBot {
-	fb := FragBot{
+	fb := &FragBot{
 		client:   c,
-		Queue:    newCmdQueue(),
+		queue:    newCmdQueue(),
 		sentJoin: false,
 		requester: NewRequester(
 			backendUrl,
@@ -58,9 +58,9 @@ func newFragBot(c *bot.Client, data *BotData, backendUrl string, accessToken str
 		fb.waitTime = verifiedWaitTime
 
 	}
-	fb.Queue.start()
+	fb.queue.start()
 	logging.Log("Initialized FragBot with client type:", data.BotType)
-	return &fb
+	return fb
 }
 
 // onStart gets called whenever FragBot joins a server
@@ -114,7 +114,7 @@ func (fb *FragBot) onParty(ign string) {
 		logging.Log("(No Access) Rejected party invite from: " + ign)
 		return
 	}
-	queueLen := fb.Queue.GetTotalQueuedTasks()
+	queueLen := fb.queue.GetTotalQueuedTasks()
 	if (queueLen >= 10 && (botType == Verified || botType == Whitelisted || botType == Active)) || (queueLen >= 5 && (botType == Exclusive || botType == Priority)) {
 		logging.SendEmbed(fb.data.DiscInfo.LogWebhook, fb.data.AccountInfo.Username, "Rejected party invite from: "+ign+", queue full!")
 		logging.Log("(Queue Full) Rejected party invite from: " + ign)
@@ -137,8 +137,8 @@ func (fb *FragBot) onParty(ign string) {
 
 // QueueCommand queues a cmd to custom queue to be ran after prev cmd if there
 func (fb *FragBot) QueueCommand(ign string) {
-	fb.Queue.addTask(func() {
-		logging.Log("Started processing of: " + ign + "'s invite, Queue Length: " + strconv.Itoa(fb.Queue.GetTotalQueuedTasks()))
+	fb.queue.addTask(func() {
+		logging.Log("Started processing of: " + ign + "'s invite, Queue Length: " + strconv.Itoa(fb.queue.GetTotalQueuedTasks()))
 		time.Sleep(1 * time.Second)
 		logging.Log("Accepting invite from: " + ign)
 		err := sendMsg(fb.client, "/party accept "+ign)
@@ -158,5 +158,5 @@ func (fb *FragBot) QueueCommand(ign string) {
 
 // stop stops all fb processes
 func (fb *FragBot) stop() {
-	fb.Queue.stop()
+	fb.queue.stop()
 }

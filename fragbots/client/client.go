@@ -65,6 +65,7 @@ func StartClient(data *BotData, backendUrl string, accessToken string) error {
 			logging.SendEmbed(data.DiscInfo.LogWebhook, data.AccountInfo.Username, "FragBot kicked from hypixel! Reconnecting...")
 
 			fragBot.stop()
+			fragBot = nil
 			time.Sleep(5 * time.Second) //Give bot some time before attempting reconnect
 			continue
 		}
