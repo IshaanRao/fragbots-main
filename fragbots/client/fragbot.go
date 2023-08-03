@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/Prince/fragbots/logging"
 	"github.com/Tnze/go-mc/bot"
+	"github.com/Tnze/go-mc/bot/basic"
+	"github.com/Tnze/go-mc/bot/world"
 	"github.com/Tnze/go-mc/chat"
 	"regexp"
 	"strconv"
@@ -25,11 +27,14 @@ const (
 
 type FragBot struct {
 	client    *bot.Client
+	botWorld  *world.World
 	queue     *CmdQueue
 	waitTime  int
 	sentJoin  bool
 	requester *Requester
-	data      *BotData
+	data      BotData
+	movement  *Movement
+	player    *basic.Player
 }
 
 // initBot sets up everything to run fragbot logic
