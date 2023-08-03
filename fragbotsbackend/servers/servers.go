@@ -50,6 +50,22 @@ func StopFragbotService(botId string) error {
 	return err
 }
 func RunFragbotsService(botId string) error {
+	port := 100
+	switch botId {
+	case "Verified1":
+		port = 100
+	case "Verified2":
+		port = 101
+	case "Whitelisted":
+		port = 102
+	case "Exclusive":
+		port = 103
+	case "Active":
+		port = 104
+	case "Priority":
+		port = 105
+
+	}
 	_, err := dockerClient.ServiceCreate(ctx, swarm.ServiceSpec{
 		Annotations: swarm.Annotations{
 			Name: botId,
@@ -73,7 +89,7 @@ func RunFragbotsService(botId string) error {
 			Ports: []swarm.PortConfig{
 				{
 					TargetPort:    1234,
-					PublishedPort: 1234,
+					PublishedPort: uint32(port),
 				},
 			},
 		},
